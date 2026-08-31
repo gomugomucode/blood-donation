@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, AlertCircle, Building2, MapPin, Calendar, HeartPulse } from 'lucide-react';
+import { Plus, Search, Building2, MapPin, Calendar, HeartPulse } from 'lucide-react';
 import { useBloodRequests } from '../../hooks/useBloodRequests.js';
 import { BloodGroup } from '../../types/index.js';
 import { RequestStatus, RequestUrgency } from '../../types/blood-request.js';
@@ -95,7 +95,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
 
       {/* Medical Disclaimer Banner */}
       <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <HeartPulse className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
           <span className="font-semibold text-amber-950">Basic Screening Notice: </span>
           The donor matching engine provides application-level compatibility screening. All final donor eligibility and blood safety verification must be confirmed through certified medical assessment and blood-bank crossmatching procedures.
@@ -167,13 +167,13 @@ export const AdminBloodRequestsPage: React.FC = () => {
       {/* Main Table Content */}
       {isLoading ? (
         <Card className="p-12 flex justify-center items-center">
-          <LoadingSpinner size="lg" text="Loading blood requests..." />
+          <LoadingSpinner size="lg" label="Loading blood requests..." />
         </Card>
       ) : isError ? (
         <Card className="p-8">
           <ErrorState
             title="Failed to load blood requests"
-            description={(error as Error)?.message || 'An unexpected error occurred while fetching requests.'}
+            message={(error as Error)?.message || 'An unexpected error occurred while fetching requests.'}
             onRetry={() => refetch()}
           />
         </Card>
@@ -182,8 +182,13 @@ export const AdminBloodRequestsPage: React.FC = () => {
           <EmptyState
             title="No blood requests found"
             description="There are currently no blood requests matching your search or filter parameters."
-            actionText="Create Request"
-            onAction={() => window.location.assign('/admin/requests/create')}
+            action={
+              <Link to="/admin/requests/create">
+                <Button variant="primary" size="sm">
+                  Create Request
+                </Button>
+              </Link>
+            }
           />
         </Card>
       ) : (
@@ -295,8 +300,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
           {data.pagination && data.pagination.totalPages > 1 && (
             <div className="p-4 border-t border-slate-100">
               <Pagination
-                currentPage={data.pagination.page}
-                totalPages={data.pagination.totalPages}
+                pagination={data.pagination}
                 onPageChange={setPage}
               />
             </div>

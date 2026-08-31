@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   HeartPulse,
@@ -23,7 +24,7 @@ import {
   useCancelBloodRequest,
   useNotifyDonorCandidate,
 } from '../../hooks/useBloodRequests.js';
-import { useRecordDonation } from '../../hooks/useAdmin.js';
+import { adminService } from '../../services/admin.service.js';
 import { DonorMatchCandidate } from '../../types/blood-request.js';
 import {
   BloodGroupBadge,
@@ -43,6 +44,7 @@ import { formatDate } from '../../lib/utils.js';
 
 export const AdminBloodRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const {
     data: request,
@@ -59,7 +61,29 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
 
   const cancelMutation = useCancelBloodRequest(id!);
   const notifyMutation = useNotifyDonorCandidate(id!);
-  const recordDonationMutation = useRecordDonation();
+
+  const recordDonationMutation = useMutation({
+    mutationFn: ({
+      donorId,
+      location,
+      notes,
+    }: {
+      donorId: string;
+      location: string;
+      notes?: string;
+    }) =>
+      adminService.recordDonation(donorId, {
+        location,
+        bloodRequestId: id,
+        notes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blood-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['blood-request-matches', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+    },
+  });
 
   // Modals state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -83,7 +107,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
   if (isReqLoading) {
     return (
       <Card className="p-12 flex justify-center items-center">
-        <LoadingSpinner size="lg" text="Loading blood request and candidate matches..." />
+        <LoadingSpinner size="lg" label="Loading blood request and candidate matches..." />
       </Card>
     );
   }
@@ -93,7 +117,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
       <Card className="p-8">
         <ErrorState
           title="Blood request not found"
-          description={(reqError as Error)?.message || 'The requested blood request could not be loaded.'}
+          message={(reqError as Error)?.message || 'The requested blood request could not be loaded.'}
           onRetry={() => refetchRequest()}
         />
       </Card>
@@ -168,11 +192,8 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
       setRecordError(null);
       await recordDonationMutation.mutateAsync({
         donorId: selectedDonorForDonation.id,
-        data: {
-          location: donationLocation,
-          bloodRequestId: request.id,
-          notes: donationNotes,
-        },
+        location: donationLocation,
+        notes: donationNotes,
       });
       setIsRecordModalOpen(false);
       refetchRequest();
@@ -389,7 +410,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
 
         {isMatchLoading ? (
           <Card className="p-8 flex justify-center items-center">
-            <LoadingSpinner size="md" text="Evaluating and ranking candidate donors..." />
+            <LoadingSpinner size="md" label="Evaluating and ranking candidate donors..." />
           </Card>
         ) : !matchData?.candidates || matchData.candidates.length === 0 ? (
           <Card className="p-8 text-center">
@@ -658,8 +679,8 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleCancelSubmit}
         title="Cancel Blood Request"
-        description="Are you sure you want to cancel this blood request? Cancelled requests cannot accept further donations and will be archived."
-        confirmText="Cancel Request"
+        message="Are you sure you want to cancel this blood request? Cancelled requests cannot accept further donations and will be archived."
+        confirmLabel="Cancel Request"
         variant="danger"
         isLoading={cancelMutation.isPending}
       />
