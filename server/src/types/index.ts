@@ -1,0 +1,81 @@
+import { Request } from 'express';
+import { Role, BloodGroup } from '@prisma/client';
+
+export { Role, BloodGroup };
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: Role;
+  donorProfileId?: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthUser;
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  errors?: Array<{ field: string; message: string }>;
+}
+
+export interface PaginationParams {
+  page: number;
+  limit: number;
+  skip: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export interface DonorFilters {
+  bloodGroup?: BloodGroup;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface EligibilityResult {
+  isEligible: boolean;
+  reason: string;
+  nextEligibleDate: string | null;
+  daysUntilEligible: number | null;
+  criteria: {
+    ageEligible: boolean;
+    intervalEligible: boolean;
+    statusEligible: boolean;
+    calculatedAge: number;
+    daysSinceLastDonation: number | null;
+  };
+  disclaimer: string;
+}
+
+export interface DashboardMetrics {
+  totalDonors: number;
+  eligibleDonors: number;
+  totalDonations: number;
+  recentDonationsCount: number;
+  bloodGroupDistribution: Record<BloodGroup, number>;
+  recentDonations: Array<{
+    id: string;
+    donatedAt: Date;
+    location: string;
+    notes: string | null;
+    donor: {
+      id: string;
+      fullName: string;
+      bloodGroup: BloodGroup;
+    };
+  }>;
+}
