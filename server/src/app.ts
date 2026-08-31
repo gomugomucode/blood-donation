@@ -85,7 +85,25 @@ export const createApp = (): Express => {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-  // 5. Root Health Check Handlers
+  // 5. Root & Health Check Handlers
+  app.get('/favicon.ico', (_req: Request, res: Response): void => {
+    res.status(204).end();
+  });
+
+  app.get('/', (_req: Request, res: Response): void => {
+    res.status(200).json({
+      name: 'HemaCare Blood Donation Management API',
+      status: 'online',
+      version: '1.0.0',
+      clientUrl: env.CLIENT_URL || 'http://localhost:5173',
+      endpoints: {
+        health: '/health',
+        apiRoot: '/api/v1',
+      },
+      message: 'Welcome to HemaCare API. Open the frontend at http://localhost:5173 to access the web application.',
+    });
+  });
+
   const healthCheckHandler = async (_req: Request, res: Response): Promise<void> => {
     try {
       // Verify database reachability
