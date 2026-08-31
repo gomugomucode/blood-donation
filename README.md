@@ -70,9 +70,9 @@ graph TD
 |---|---|
 | **Frontend** | React 19, TypeScript, Vite, React Router v7, TanStack Query v5, React Hook Form, Zod, Tailwind CSS, Lucide React |
 | **Backend** | Node.js, Express, TypeScript, REST API, Zod validation, Helmet, CORS, Express-Rate-Limit, Morgan |
-| **Database** | PostgreSQL 18, Prisma ORM 6 |
-| **Authentication** | bcryptjs (12 salt rounds), JSON Web Tokens (JWT), HttpOnly SameSite secure cookies |
-| **Testing** | Vitest, Supertest (41 automated tests covering Auth, RBAC, IDOR, Donors, Admin, Eligibility) |
+| **Database** | PostgreSQL 18, Prisma ORM 6 (User, DonorProfile, Donation, AuditLog models) |
+| **Authentication** | bcryptjs (12 salt rounds), JSON Web Tokens (HS256 with minimal standard claims), HttpOnly SameSite secure cookies |
+| **Testing** | Vitest, Supertest (59 automated tests covering Auth, RBAC, IDOR, Donors, Admin, Donations, Eligibility, Health, Param Validation) |
 
 ---
 
