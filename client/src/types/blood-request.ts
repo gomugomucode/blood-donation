@@ -1,4 +1,4 @@
-import { BloodGroup } from './auth.js';
+import { BloodGroup } from './index.js';
 
 export type RequestStatus = 'OPEN' | 'PARTIALLY_FULFILLED' | 'FULFILLED' | 'CANCELLED' | 'EXPIRED';
 export type RequestUrgency = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';

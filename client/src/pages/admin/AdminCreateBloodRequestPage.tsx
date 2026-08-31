@@ -12,8 +12,21 @@ import { Card } from '../../components/common/Card.js';
 import { Input } from '../../components/common/Input.js';
 import { Select } from '../../components/common/Select.js';
 
+const bloodGroups = [
+  'A_POSITIVE',
+  'A_NEGATIVE',
+  'B_POSITIVE',
+  'B_NEGATIVE',
+  'AB_POSITIVE',
+  'AB_NEGATIVE',
+  'O_POSITIVE',
+  'O_NEGATIVE',
+] as const;
+
+const urgencies = ['LOW', 'NORMAL', 'HIGH', 'CRITICAL'] as const;
+
 const formSchema = z.object({
-  bloodGroup: z.nativeEnum(BloodGroup, {
+  bloodGroup: z.enum(bloodGroups, {
     errorMap: () => ({ message: 'Please select a blood group.' }),
   }),
   unitsRequired: z
@@ -21,7 +34,7 @@ const formSchema = z.object({
     .int('Units required must be an integer.')
     .min(1, 'At least 1 unit is required.')
     .max(50, 'Units required cannot exceed 50.'),
-  urgency: z.nativeEnum(RequestUrgency),
+  urgency: z.enum(urgencies),
   hospitalName: z.string().trim().min(2, 'Hospital name must be at least 2 characters.'),
   location: z.string().trim().min(2, 'Location/City is required.'),
   requiredBy: z
@@ -61,7 +74,7 @@ export const AdminCreateBloodRequestPage: React.FC = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      urgency: 'NORMAL',
+      urgency: 'NORMAL' as RequestUrgency,
       unitsRequired: 1,
       requiredBy: defaultDateStr,
     },
@@ -72,6 +85,8 @@ export const AdminCreateBloodRequestPage: React.FC = () => {
       setFormError(null);
       const created = await createMutation.mutateAsync({
         ...data,
+        bloodGroup: data.bloodGroup as BloodGroup,
+        urgency: data.urgency as RequestUrgency,
         requiredBy: new Date(data.requiredBy).toISOString(),
       });
       navigate(`/admin/requests/${created.id}`);

@@ -15,9 +15,8 @@ export interface User {
   email: string;
   role: Role;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
   donorProfile?: DonorProfile | null;
-  eligibility?: EligibilityResult | null;
 }
 
 export interface DonorProfile {
@@ -28,8 +27,8 @@ export interface DonorProfile {
   address: string;
   contactNumber: string;
   bloodGroup: BloodGroup;
-  lastDonationAt: string | null;
-  preferences?: Record<string, any>;
+  lastDonationAt?: string | null;
+  preferences?: Record<string, any> | null;
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +46,7 @@ export interface DonorProfile {
 export interface Donation {
   id: string;
   donorId: string;
+  bloodRequestId?: string | null;
   donatedAt: string;
   location: string;
   notes?: string | null;
@@ -102,6 +102,16 @@ export interface DonorFilters {
   includeDeactivated?: boolean;
 }
 
+export interface BloodRequestDashboardMetrics {
+  totalRequests: number;
+  openRequests: number;
+  criticalRequests: number;
+  highRequests: number;
+  partiallyFulfilledRequests: number;
+  fulfilledTodayRequests: number;
+  expiredRequests: number;
+}
+
 export interface DashboardMetrics {
   totalDonors: number;
   eligibleDonors: number;
@@ -119,4 +129,5 @@ export interface DashboardMetrics {
       bloodGroup: BloodGroup;
     };
   }>;
+  requestMetrics?: BloodRequestDashboardMetrics;
 }

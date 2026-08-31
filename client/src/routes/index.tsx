@@ -20,6 +20,9 @@ import { DonorHistoryPage } from '../pages/donor/DonorHistoryPage.js';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.js';
 import { AdminDonorsPage } from '../pages/admin/AdminDonorsPage.js';
 import { AdminDonorDetailPage } from '../pages/admin/AdminDonorDetailPage.js';
+import { AdminBloodRequestsPage } from '../pages/admin/AdminBloodRequestsPage.js';
+import { AdminCreateBloodRequestPage } from '../pages/admin/AdminCreateBloodRequestPage.js';
+import { AdminBloodRequestDetailPage } from '../pages/admin/AdminBloodRequestDetailPage.js';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -59,6 +62,9 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<AdminDashboardPage />} />
         <Route path="donors" element={<AdminDonorsPage />} />
         <Route path="donors/:id" element={<AdminDonorDetailPage />} />
+        <Route path="requests" element={<AdminBloodRequestsPage />} />
+        <Route path="requests/create" element={<AdminCreateBloodRequestPage />} />
+        <Route path="requests/:id" element={<AdminBloodRequestDetailPage />} />
       </Route>
 
       {/* Catch-all Fallback */}

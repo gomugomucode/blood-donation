@@ -21,6 +21,7 @@ export interface AdminRecordDonationPayload {
   location: string;
   donatedAt?: string;
   notes?: string;
+  bloodRequestId?: string;
 }
 
 export const adminService = {

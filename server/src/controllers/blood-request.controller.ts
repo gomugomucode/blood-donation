@@ -66,7 +66,7 @@ export class BloodRequestController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const request = await bloodRequestService.getBloodRequestById(id);
 
       res.status(200).json({
@@ -88,7 +88,7 @@ export class BloodRequestController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const input = req.body as UpdateBloodRequestInput;
       const updated = await bloodRequestService.updateBloodRequest(id, input, req.user?.id);
 
@@ -112,7 +112,7 @@ export class BloodRequestController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { reason } = (req.body || {}) as CancelBloodRequestInput;
       const cancelled = await bloodRequestService.cancelBloodRequest(id, req.user?.id, reason);
 
@@ -136,7 +136,7 @@ export class BloodRequestController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const matches = await bloodRequestService.getMatches(id, req.user?.id);
 
       res.status(200).json({
@@ -158,7 +158,7 @@ export class BloodRequestController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { donorId, channel, message } = req.body as NotifyDonorCandidateInput;
 
       const result = await notificationService.notifyDonor(
