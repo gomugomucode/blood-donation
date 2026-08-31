@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Role } from '@prisma/client';
+import { Role } from '../types/index.js';
 import { authenticate, requireRole } from '../middleware/auth.middleware.js';
 import {
   validateBody,
@@ -19,7 +19,8 @@ import {
 const router = Router();
 
 // Enforce ADMIN role authentication across all Blood Request routes
-router.use(authenticate, requireRole(Role.ADMIN));
+router.use(authenticate);
+router.use(requireRole(Role.ADMIN));
 
 router.post(
   '/',
