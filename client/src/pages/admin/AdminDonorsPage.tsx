@@ -12,7 +12,7 @@ import { Pagination } from '../../components/common/Pagination.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
 import { EmptyState } from '../../components/common/EmptyState.js';
-import { Users, UserX, AlertCircle, CheckCircle } from 'lucide-react';
+import { UserX, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const AdminDonorsPage: React.FC = () => {
   const queryClient = useQueryClient();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service.js';
 import { BloodGroupBadge, EligibilityBadge } from '../../components/common/Badge.js';
@@ -27,7 +27,6 @@ import {
 
 export const AdminDonorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -203,7 +202,7 @@ export const AdminDonorDetailPage: React.FC = () => {
         <CardContent className="p-0">
           {donor.donations && donor.donations.length > 0 ? (
             <div className="divide-y divide-slate-100">
-              {donor.donations.map((donation, idx) => (
+              {donor.donations.map((donation) => (
                 <div key={donation.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-xs">
                   <div>
                     <span className="font-bold text-slate-900 flex items-center gap-1.5">

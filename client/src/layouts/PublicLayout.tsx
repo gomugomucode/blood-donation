@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth.js';
 export const PublicLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isDonor } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

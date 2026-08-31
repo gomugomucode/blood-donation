@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth.js';
 import { donorService } from '../../services/donor.service.js';
 import { StatCard } from '../../components/common/StatCard.js';
 import { EligibilityCard } from '../../components/donor/EligibilityCard.js';
@@ -9,12 +8,10 @@ import { DonorCard } from '../../components/donor/DonorCard.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
 import { Button } from '../../components/common/Button.js';
-import { Droplet, History, User, HeartHandshake, ArrowRight } from 'lucide-react';
+import { Droplet, History, User, HeartHandshake } from 'lucide-react';
 import { formatDate } from '../../lib/utils.js';
 
 export const DonorDashboardPage: React.FC = () => {
-  const { user } = useAuth();
-
   const {
     data: profile,
     isLoading: isProfileLoading,
@@ -28,7 +25,6 @@ export const DonorDashboardPage: React.FC = () => {
   const {
     data: donations,
     isLoading: isDonationsLoading,
-    isError: isDonationsError,
   } = useQuery({
     queryKey: ['donor', 'donations'],
     queryFn: () => donorService.getDonations(),

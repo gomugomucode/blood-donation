@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: LoginFormValues): Promise<User> => {
     setIsLoading(true);
     try {
-      const result = await authService.login(data);
+      await authService.login(data);
       // Fetch fresh full user profile with eligibility
       const fullUser = await authService.getMe();
       setUser(fullUser);
