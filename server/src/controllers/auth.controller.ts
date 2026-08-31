@@ -26,7 +26,7 @@ export class AuthController {
         res,
         {
           user: result.user,
-          token: result.token, // Also provided in payload for flexible client handling
+          token: result.token,
         },
         'Account registered successfully',
         201
@@ -51,6 +51,51 @@ export class AuthController {
         },
         'Authenticated successfully'
       );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await authService.forgotPassword(req.body);
+      sendSuccess(res, result, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await authService.resetPassword(req.body);
+      // Clear cookie to force re-authentication with new password
+      res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax' | 'strict',
+        path: '/',
+      });
+      sendSuccess(res, null, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public changePassword = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const result = await authService.changePassword(req.user.id, req.body);
+      // Clear cookie to force re-authentication across active sessions
+      res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax' | 'strict',
+        path: '/',
+      });
+      sendSuccess(res, null, result.message);
     } catch (error) {
       next(error);
     }

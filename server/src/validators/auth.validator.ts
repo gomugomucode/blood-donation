@@ -61,5 +61,40 @@ export const loginSchema = z.object({
     .max(128, 'Password cannot exceed 128 characters'),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ required_error: 'Email is required' })
+    .email('Please provide a valid email address')
+    .max(255, 'Email cannot exceed 255 characters')
+    .trim()
+    .toLowerCase(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string({ required_error: 'Reset token is required' })
+    .min(10, 'Reset token is invalid or malformed')
+    .max(255, 'Token exceeds maximum length')
+    .trim(),
+  newPassword: z
+    .string({ required_error: 'New password is required' })
+    .min(8, 'Password must be at least 8 characters long')
+    .max(128, 'Password cannot exceed 128 characters'),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string({ required_error: 'Current password is required' })
+    .min(1, 'Current password is required')
+    .max(128, 'Password cannot exceed 128 characters'),
+  newPassword: z
+    .string({ required_error: 'New password is required' })
+    .min(8, 'New password must be at least 8 characters long')
+    .max(128, 'Password cannot exceed 128 characters'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

@@ -46,6 +46,7 @@ enum NotificationChannel {
 
 enum NotificationStatus {
   PENDING
+  PROCESSING
   SENT
   FAILED
   READ
@@ -75,17 +76,32 @@ enum DeclineReason {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String
-  role          Role           @default(DONOR)
-  donorProfile  DonorProfile?
-  bloodRequests BloodRequest[]
-  notifications Notification[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  role                Role                 @default(DONOR)
+  sessionVersion      Int                  @default(1)
+  donorProfile        DonorProfile?
+  bloodRequests       BloodRequest[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([email])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model DonorProfile {
@@ -164,19 +180,24 @@ model DonorOpportunity {
 }
 
 model Notification {
-  id            String              @id @default(uuid())
-  userId        String
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunityId String?
-  opportunity   DonorOpportunity?   @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
-  channel       NotificationChannel @default(IN_APP)
-  type          NotificationType    @default(OPPORTUNITY_ALERT)
-  status        NotificationStatus  @default(PENDING)
-  title         String
-  message       String
-  sentAt        DateTime?
-  readAt        DateTime?
-  createdAt     DateTime            @default(now())
+  id                String              @id @default(uuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunityId     String?
+  opportunity       DonorOpportunity?   @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  channel           NotificationChannel @default(IN_APP)
+  type              NotificationType    @default(OPPORTUNITY_ALERT)
+  status            NotificationStatus  @default(PENDING)
+  title             String
+  message           String
+  attemptCount      Int                 @default(0)
+  lastAttemptAt     DateTime?
+  errorCode         String?
+  providerMessageId String?
+  sentAt            DateTime?
+  readAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
 
   @@index([userId, status])
   @@index([opportunityId])

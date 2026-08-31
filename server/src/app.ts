@@ -8,11 +8,16 @@ import { env } from './config/env.js';
 import { prisma } from './config/db.js';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { requestIdMiddleware } from './middleware/request-id.middleware.js';
+import { csrfProtection } from './middleware/csrf.middleware.js';
 
 export const createApp = (): Express => {
   const app = express();
 
-  // 1. Security Headers (Helmet)
+  // 1. Request Correlation ID (X-Request-ID)
+  app.use(requestIdMiddleware);
+
+  // 2. Security Headers (Helmet)
   app.use(
     helmet({
       contentSecurityPolicy: false, // SPA client handles CSP or static host
@@ -20,14 +25,16 @@ export const createApp = (): Express => {
     })
   );
 
-  // 2. Strict CORS Configuration
+  // 3. Strict CORS Configuration
   const allowedOrigins = [
     env.CLIENT_URL,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5174',
-  ];
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+  ].filter(Boolean);
 
   app.use(
     cors({
@@ -36,17 +43,20 @@ export const createApp = (): Express => {
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          callback(new Error(`CORS Error: Origin ${origin} is not allowed`));
+          callback(null, false);
         }
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+      exposedHeaders: ['X-Request-ID'],
     })
   );
 
-  // 3. Multi-Tier Rate Limiting
-  // Skip rate limiting in automated test runs
+  // 4. CSRF / Origin Verification
+  app.use(csrfProtection);
+
+  // 5. Multi-Tier Rate Limiting
   const isTest = env.NODE_ENV === 'test';
 
   const authLimiter = rateLimit({
@@ -75,9 +85,11 @@ export const createApp = (): Express => {
 
   app.use('/api/v1/auth/login', authLimiter);
   app.use('/api/v1/auth/register', authLimiter);
+  app.use('/api/v1/auth/forgot-password', authLimiter);
+  app.use('/api/v1/auth/reset-password', authLimiter);
   app.use('/api/v1', apiLimiter);
 
-  // 4. General Middlewares
+  // 6. General Middlewares
   if (!isTest) {
     app.use(morgan('dev'));
   }
@@ -85,28 +97,63 @@ export const createApp = (): Express => {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-  // 5. Root & Health Check Handlers
+  // 7. Root & Favicon Handlers
   app.get('/favicon.ico', (_req: Request, res: Response): void => {
     res.status(204).end();
   });
 
-  app.get('/', (_req: Request, res: Response): void => {
+  app.get('/', (req: Request, res: Response): void => {
     res.status(200).json({
       name: 'HemaCare Blood Donation Management API',
       status: 'online',
       version: '1.0.0',
       clientUrl: env.CLIENT_URL || 'http://localhost:5173',
+      requestId: req.id,
       endpoints: {
         health: '/health',
+        liveness: '/health/live',
+        readiness: '/health/ready',
         apiRoot: '/api/v1',
       },
       message: 'Welcome to HemaCare API. Open the frontend at http://localhost:5173 to access the web application.',
     });
   });
 
-  const healthCheckHandler = async (_req: Request, res: Response): Promise<void> => {
+  // 8. Health, Liveness & Readiness Handlers
+  app.get('/health/live', (req: Request, res: Response): void => {
+    res.status(200).json({
+      status: 'alive',
+      timestamp: new Date().toISOString(),
+      service: 'HemaCare Blood Donation API',
+      requestId: req.id,
+    });
+  });
+
+  app.get('/health/ready', async (req: Request, res: Response): Promise<void> => {
     try {
-      // Verify database reachability
+      await prisma.$queryRaw`SELECT 1`;
+      res.status(200).json({
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        service: 'HemaCare Blood Donation API',
+        database: 'connected',
+        version: '1.0.0',
+        requestId: req.id,
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'not_ready',
+        timestamp: new Date().toISOString(),
+        service: 'HemaCare Blood Donation API',
+        database: 'disconnected',
+        error: env.NODE_ENV === 'production' ? 'Database connection error' : (error as Error).message,
+        requestId: req.id,
+      });
+    }
+  });
+
+  const healthCheckHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
       await prisma.$queryRaw`SELECT 1`;
       res.status(200).json({
         status: 'healthy',
@@ -114,6 +161,7 @@ export const createApp = (): Express => {
         service: 'Blood Donation Management API',
         database: 'connected',
         version: '1.0.0',
+        requestId: req.id,
       });
     } catch (error) {
       res.status(503).json({
@@ -122,6 +170,7 @@ export const createApp = (): Express => {
         service: 'Blood Donation Management API',
         database: 'disconnected',
         error: env.NODE_ENV === 'production' ? 'Database connection error' : (error as Error).message,
+        requestId: req.id,
       });
     }
   };
@@ -129,10 +178,10 @@ export const createApp = (): Express => {
   app.get('/health', healthCheckHandler);
   app.get('/api/v1/health', healthCheckHandler);
 
-  // 6. Mount API Routes
+  // 9. Mount API Routes
   app.use('/api/v1', routes);
 
-  // 7. 404 and Global Error Handling
+  // 10. 404 and Global Error Handling
   app.use(notFoundHandler);
   app.use(errorHandler);
 

@@ -1,0 +1,63 @@
+name: CI / Production Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-verify:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: blood_donation_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/blood_donation_test?schema=public
+      JWT_SECRET: test_ci_jwt_super_secret_key_minimum_32_characters_long!
+      JWT_EXPIRES_IN: 7d
+      CLIENT_URL: http://localhost:5173
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=server/prisma/schema.prisma
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy --schema=server/prisma/schema.prisma
+
+      - name: Typecheck Workspaces
+        run: npm run typecheck --workspaces
+
+      - name: Run Automated Test Suites (119 Tests)
+        run: npm test --workspace=server
+
+      - name: Build Production Bundles
+        run: npm run build --workspaces

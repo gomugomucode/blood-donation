@@ -10,6 +10,8 @@ import { HomePage } from '../pages/HomePage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { RegisterPage } from '../pages/RegisterPage.js';
 import { AdminLoginPage } from '../pages/AdminLoginPage.js';
+import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage.js';
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage.js';
 
 // Donor Pages
 import { DonorDashboardPage } from '../pages/donor/DonorDashboardPage.js';
@@ -25,6 +27,7 @@ import { AdminDonorDetailPage } from '../pages/admin/AdminDonorDetailPage.js';
 import { AdminBloodRequestsPage } from '../pages/admin/AdminBloodRequestsPage.js';
 import { AdminCreateBloodRequestPage } from '../pages/admin/AdminCreateBloodRequestPage.js';
 import { AdminBloodRequestDetailPage } from '../pages/admin/AdminBloodRequestDetailPage.js';
+import { AdminAuditLogsPage } from '../pages/admin/AdminAuditLogsPage.js';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -34,6 +37,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       {/* Admin Login (Isolated) */}
@@ -69,6 +74,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="requests" element={<AdminBloodRequestsPage />} />
         <Route path="requests/create" element={<AdminCreateBloodRequestPage />} />
         <Route path="requests/:id" element={<AdminBloodRequestDetailPage />} />
+        <Route path="audit-logs" element={<AdminAuditLogsPage />} />
       </Route>
 
       {/* Catch-all Fallback */}

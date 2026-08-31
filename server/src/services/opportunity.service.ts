@@ -98,26 +98,6 @@ export class OpportunityService {
         continue;
       }
 
-      // Check anti-fatigue duplicate rule: No duplicate active opportunity for same donor + same request
-      const existingActive = await prisma.donorOpportunity.findFirst({
-        where: {
-          donorId,
-          bloodRequestId,
-          status: {
-            in: [
-              OpportunityStatus.PENDING,
-              OpportunityStatus.VIEWED,
-              OpportunityStatus.ACCEPTED,
-            ],
-          },
-        },
-      });
-
-      if (existingActive) {
-        skipped++;
-        continue;
-      }
-
       const donorProfile = await prisma.donorProfile.findUnique({
         where: { id: donorId },
         include: { user: true },
@@ -132,38 +112,75 @@ export class OpportunityService {
       const matchScore = candidate.matchScore;
       const matchReason = `${candidate.compatibilityType === 'EXACT' ? 'Exact match' : 'Compatible donor'} (${candidate.bloodGroup.replace('_', '+')}) in ${candidate.location}. Basic screening pass.`;
 
-      // Atomically create opportunity & notification
-      const opportunity = await prisma.$transaction(async (tx) => {
-        const opp = await tx.donorOpportunity.create({
-          data: {
-            donorId,
-            bloodRequestId,
-            matchScore,
-            matchReason,
-            status: OpportunityStatus.PENDING,
-            expiresAt: bloodRequest.requiredBy,
+      // Atomically check anti-fatigue duplicate rule & create opportunity + notification
+      let opportunity: any = null;
+      try {
+        opportunity = await prisma.$transaction(
+          async (tx) => {
+            const existingActive = await tx.donorOpportunity.findFirst({
+              where: {
+                donorId,
+                bloodRequestId,
+                status: {
+                  in: [
+                    OpportunityStatus.PENDING,
+                    OpportunityStatus.VIEWED,
+                    OpportunityStatus.ACCEPTED,
+                  ],
+                },
+              },
+            });
+
+            if (existingActive) {
+              return null;
+            }
+
+            const opp = await tx.donorOpportunity.create({
+              data: {
+                donorId,
+                bloodRequestId,
+                matchScore,
+                matchReason,
+                status: OpportunityStatus.PENDING,
+                expiresAt: bloodRequest.requiredBy,
+              },
+            });
+
+            // Minimum necessary disclosure: Do NOT include patient name, diagnosis, or clinical notes!
+            const notifTitle = `Blood Donation Opportunity (${bloodRequest.bloodGroup.replace('_', '+')})`;
+            const notifMessage = `A potential match was found for a ${bloodRequest.urgency.toLowerCase()} urgency blood request in ${bloodRequest.location} needed by ${new Date(bloodRequest.requiredBy).toLocaleDateString()}. Please review your opportunity.`;
+
+            await tx.notification.create({
+              data: {
+                userId: donorProfile.userId,
+                opportunityId: opp.id,
+                channel: NotificationChannel.IN_APP,
+                type: NotificationType.OPPORTUNITY_ALERT,
+                status: 'SENT',
+                title: notifTitle,
+                message: notifMessage,
+                sentAt: new Date(),
+              },
+            });
+
+            return opp;
           },
-        });
+          {
+            isolationLevel: 'Serializable',
+          }
+        );
+      } catch (err: any) {
+        if (err.code === 'P2034' || err.message?.includes('could not serialize access')) {
+          skipped++;
+          continue;
+        }
+        throw err;
+      }
 
-        // Minimum necessary disclosure: Do NOT include patient name, diagnosis, or clinical notes!
-        const notifTitle = `Blood Donation Opportunity (${bloodRequest.bloodGroup.replace('_', '+')})`;
-        const notifMessage = `A potential match was found for a ${bloodRequest.urgency.toLowerCase()} urgency blood request in ${bloodRequest.location} needed by ${new Date(bloodRequest.requiredBy).toLocaleDateString()}. Please review your opportunity.`;
-
-        await tx.notification.create({
-          data: {
-            userId: donorProfile.userId,
-            opportunityId: opp.id,
-            channel: NotificationChannel.IN_APP,
-            type: NotificationType.OPPORTUNITY_ALERT,
-            status: 'SENT',
-            title: notifTitle,
-            message: notifMessage,
-            sentAt: new Date(),
-          },
-        });
-
-        return opp;
-      });
+      if (!opportunity) {
+        skipped++;
+        continue;
+      }
 
       await auditService.log({
         actorUserId: coordinatorUserId,

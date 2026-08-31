@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, HeartPulse, HeartHandshake } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, HeartHandshake, ShieldAlert } from 'lucide-react';
 import { cn } from '../../lib/utils.js';
 
 export const AdminSidebar: React.FC = () => {
@@ -22,6 +22,12 @@ export const AdminSidebar: React.FC = () => {
       end: false,
       label: 'Donor Directory',
       icon: Users,
+    },
+    {
+      to: '/admin/audit-logs',
+      end: false,
+      label: 'Security & Audit Logs',
+      icon: ShieldAlert,
     },
   ];
 

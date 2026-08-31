@@ -377,12 +377,28 @@ export class AdminService {
       }
 
       // 3. Atomically update BloodRequest fulfillment and status if linked
-      if (linkedRequest) {
-        const newUnitsFulfilled = linkedRequest.unitsFulfilled + 1;
-        const isFullyFulfilled = newUnitsFulfilled >= linkedRequest.unitsRequired;
+      if (input.bloodRequestId) {
+        const txRequest = await tx.bloodRequest.findUnique({
+          where: { id: input.bloodRequestId },
+        });
+
+        if (!txRequest) {
+          throw new NotFoundError(`Blood request with ID ${input.bloodRequestId} was not found.`);
+        }
+
+        if (txRequest.status === 'CANCELLED' || txRequest.status === 'EXPIRED') {
+          throw new BadRequestError(`Cannot record a donation against a ${txRequest.status.toLowerCase()} blood request.`);
+        }
+
+        if (txRequest.unitsFulfilled >= txRequest.unitsRequired) {
+          throw new BadRequestError('Blood request is already fully fulfilled.');
+        }
+
+        const newUnitsFulfilled = txRequest.unitsFulfilled + 1;
+        const isFullyFulfilled = newUnitsFulfilled >= txRequest.unitsRequired;
 
         await tx.bloodRequest.update({
-          where: { id: linkedRequest.id },
+          where: { id: txRequest.id },
           data: {
             unitsFulfilled: newUnitsFulfilled,
             status: isFullyFulfilled ? 'FULFILLED' : 'PARTIALLY_FULFILLED',
@@ -394,7 +410,7 @@ export class AdminService {
         await tx.donorOpportunity.updateMany({
           where: {
             donorId,
-            bloodRequestId: linkedRequest.id,
+            bloodRequestId: txRequest.id,
             status: { in: ['ACCEPTED', 'PENDING', 'VIEWED'] },
           },
           data: {

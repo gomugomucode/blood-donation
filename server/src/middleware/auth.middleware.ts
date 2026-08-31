@@ -9,6 +9,7 @@ interface JwtPayload {
   sub?: string;
   userId?: string;
   role: Role;
+  v?: number; // sessionVersion
   iat?: number;
   exp?: number;
 }
@@ -64,10 +65,20 @@ export const authenticate = async (
       throw new UnauthorizedError('User account not found or session revoked.');
     }
 
+    if (user.donorProfile?.deletedAt) {
+      throw new UnauthorizedError('This account has been deactivated. Please contact support.');
+    }
+
+    // Strict session invalidation check: token sessionVersion must match active database version
+    if (decoded.v !== undefined && decoded.v !== user.sessionVersion) {
+      throw new UnauthorizedError('Session has been revoked due to a password or security update. Please log in again.');
+    }
+
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       role: user.role,
+      sessionVersion: user.sessionVersion,
       donorProfileId: user.donorProfile?.id,
     };
 
