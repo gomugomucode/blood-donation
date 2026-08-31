@@ -23,14 +23,6 @@ enum BloodGroup {
   O_NEGATIVE
 }
 
-enum RequestStatus {
-  OPEN
-  PARTIALLY_FULFILLED
-  FULFILLED
-  CANCELLED
-  EXPIRED
-}
-
 enum RequestUrgency {
   LOW
   NORMAL
@@ -38,24 +30,12 @@ enum RequestUrgency {
   CRITICAL
 }
 
-enum NotificationChannel {
-  IN_APP
-  EMAIL
-  SMS
-}
-
-enum NotificationStatus {
-  PENDING
-  PROCESSING
-  SENT
-  FAILED
-  READ
-}
-
-enum NotificationType {
-  OPPORTUNITY_ALERT
-  STATUS_UPDATE
-  GENERAL
+enum RequestStatus {
+  OPEN
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+  EXPIRED
 }
 
 enum OpportunityStatus {
@@ -73,6 +53,25 @@ enum DeclineReason {
   CANNOT_TRAVEL
   RECENTLY_DONATED
   OTHER
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationType {
+  OPPORTUNITY_ALERT
+  STATUS_UPDATE
+  GENERAL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
 }
 
 model User {
@@ -138,18 +137,15 @@ model BloodRequest {
   requiredBy       DateTime
   patientReference String?
   hospitalName     String
-  contactName      String
-  contactNumber    String
-  notes            String?
   status           RequestStatus      @default(OPEN)
+  notes            String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  closedAt         DateTime?
   donations        Donation[]
   opportunities    DonorOpportunity[]
 
+  @@index([bloodGroup, status])
   @@index([status])
-  @@index([bloodGroup])
   @@index([urgency])
   @@index([requiredBy])
   @@index([createdAt])
@@ -192,14 +188,17 @@ model Notification {
   message           String
   attemptCount      Int                 @default(0)
   lastAttemptAt     DateTime?
+  failedAt          DateTime?
   errorCode         String?
   providerMessageId String?
+  idempotencyKey    String?             @unique
   sentAt            DateTime?
   readAt            DateTime?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @default(now()) @updatedAt
 
   @@index([userId, status])
+  @@index([status, channel])
   @@index([opportunityId])
   @@index([createdAt])
 }
