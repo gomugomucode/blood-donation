@@ -116,6 +116,24 @@ export class EligibilityService {
       disclaimer: 'Basic eligibility indicator only. Formal medical and hemoglobin screening is performed at the donation center prior to collection.',
     };
   }
+
+  /**
+   * Convenience wrapper for evaluating donor eligibility by properties.
+   */
+  public calculateEligibility(
+    dateOfBirth: Date | string,
+    lastDonationAt?: Date | string | null,
+    deletedAt?: Date | string | null,
+    referenceDate?: Date
+  ): EligibilityResult {
+    return this.evaluate({
+      dateOfBirth,
+      lastDonationAt,
+      deletedAt,
+      referenceDate,
+    });
+  }
 }
 
 export const eligibilityService = new EligibilityService();
+

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth.routes.js';
 import donorRoutes from './donor.routes.js';
 import adminRoutes from './admin.routes.js';
+import bloodRequestRoutes from './blood-request.routes.js';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/donors', donorRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/blood-requests', bloodRequestRoutes);
 
 // Health check endpoint
 router.get('/health', (_req, res) => {

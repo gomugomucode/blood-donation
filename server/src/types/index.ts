@@ -1,7 +1,7 @@
 import { Request } from 'express';
-import { Role, BloodGroup } from '@prisma/client';
+import { Role, BloodGroup, RequestStatus, RequestUrgency } from '@prisma/client';
 
-export { Role, BloodGroup };
+export { Role, BloodGroup, RequestStatus, RequestUrgency };
 
 export interface AuthUser {
   id: string;
@@ -78,4 +78,42 @@ export interface DashboardMetrics {
       bloodGroup: BloodGroup;
     };
   }>;
+  requestMetrics?: BloodRequestDashboardMetrics;
+}
+
+export interface MatchExplanation {
+  compatibility: 'EXACT' | 'COMPATIBLE' | 'INCOMPATIBLE';
+  compatibilityDetails: string;
+  eligibility: 'PASS' | 'FAIL';
+  eligibilityDetails: string;
+  locationMatch: 'SAME_CITY' | 'DIFFERENT_LOCATION' | 'UNKNOWN';
+  locationDetails: string;
+  donationHistory: string;
+}
+
+export interface DonorMatchCandidate {
+  donorId: string;
+  name: string;
+  bloodGroup: BloodGroup;
+  location: string;
+  contactNumber: string;
+  lastDonationAt: string | null;
+  basicEligibility: {
+    eligible: boolean;
+    reason: string;
+    nextEligibleDate: string | null;
+  };
+  matchScore: number;
+  compatibilityType: 'EXACT' | 'COMPATIBLE';
+  explanation: MatchExplanation;
+}
+
+export interface BloodRequestDashboardMetrics {
+  totalRequests: number;
+  openRequests: number;
+  criticalRequests: number;
+  highRequests: number;
+  partiallyFulfilledRequests: number;
+  fulfilledTodayRequests: number;
+  expiredRequests: number;
 }

@@ -85,6 +85,14 @@ export class AdminService {
       }
     }
 
+    // Attach Phase 11 blood requests dashboard metrics
+    let requestMetrics;
+    try {
+      requestMetrics = await (await import('./blood-request.service.js')).bloodRequestService.getDashboardRequestMetrics();
+    } catch {
+      // Fallback
+    }
+
     return {
       totalDonors,
       eligibleDonors,
@@ -92,30 +100,38 @@ export class AdminService {
       recentDonationsCount,
       bloodGroupDistribution,
       recentDonations,
+      requestMetrics,
     };
   }
 
   /**
-   * Searchable, filterable, and paginated donor directory with server-side query execution.
+   * Retrieves paginated donor profiles with optional blood group and text search filters.
    */
   public async getDonors(query: AdminDonorQueryInput): Promise<PaginatedResult<any>> {
     const { page, limit, search, bloodGroup, includeDeactivated } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.DonorProfileWhereInput = {
-      ...(includeDeactivated ? {} : { deletedAt: null }),
-      ...(bloodGroup && { bloodGroup }),
-      ...(search && {
-        OR: [
-          { fullName: { contains: search, mode: 'insensitive' } },
-          { contactNumber: { contains: search, mode: 'insensitive' } },
-          { address: { contains: search, mode: 'insensitive' } },
-          { user: { email: { contains: search, mode: 'insensitive' } } },
-        ],
-      }),
-    };
+    const where: Prisma.DonorProfileWhereInput = {};
 
-    const [total, items] = await Promise.all([
+    if (!includeDeactivated) {
+      where.deletedAt = null;
+    }
+
+    if (bloodGroup) {
+      where.bloodGroup = bloodGroup;
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { fullName: { contains: q, mode: 'insensitive' } },
+        { address: { contains: q, mode: 'insensitive' } },
+        { contactNumber: { contains: q, mode: 'insensitive' } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, donors] = await Promise.all([
       prisma.donorProfile.count({ where }),
       prisma.donorProfile.findMany({
         where,
@@ -138,24 +154,21 @@ export class AdminService {
       }),
     ]);
 
-    const enrichedItems = items.map((donor) => {
-      const eligibility = eligibilityService.evaluate({
-        dateOfBirth: donor.dateOfBirth,
-        lastDonationAt: donor.lastDonationAt,
-        deletedAt: donor.deletedAt,
-      });
-
-      return {
-        ...donor,
-        totalDonations: donor._count.donations,
-        eligibility,
-      };
-    });
+    // Attach basic eligibility indicator to each returned donor
+    const enrichedDonors = donors.map((donor) => ({
+      ...donor,
+      eligibility: eligibilityService.calculateEligibility(
+        donor.dateOfBirth,
+        donor.lastDonationAt,
+        donor.deletedAt
+      ),
+      totalDonations: donor._count.donations,
+    }));
 
     const totalPages = Math.ceil(total / limit) || 1;
 
     return {
-      items: enrichedItems,
+      items: enrichedDonors,
       pagination: {
         total,
         page,
@@ -168,7 +181,7 @@ export class AdminService {
   }
 
   /**
-   * Retrieves single donor details including full clinical donation history.
+   * Retrieves single donor profile with clinical details and donation history.
    */
   public async getDonorById(id: string) {
     const donor = await prisma.donorProfile.findUnique({
@@ -192,11 +205,11 @@ export class AdminService {
       throw new NotFoundError(`Donor with ID ${id} was not found.`);
     }
 
-    const eligibility = eligibilityService.evaluate({
-      dateOfBirth: donor.dateOfBirth,
-      lastDonationAt: donor.lastDonationAt,
-      deletedAt: donor.deletedAt,
-    });
+    const eligibility = eligibilityService.calculateEligibility(
+      donor.dateOfBirth,
+      donor.lastDonationAt,
+      donor.deletedAt
+    );
 
     return {
       ...donor,
@@ -205,8 +218,7 @@ export class AdminService {
   }
 
   /**
-   * Updates clinical and administrative donor information.
-   * Explicitly maps allowed DTO fields to prevent mass assignment vulnerabilities.
+   * Updates clinical and contact fields for a donor profile.
    */
   public async updateDonor(id: string, input: AdminUpdateDonorInput, actorUserId?: string) {
     const existing = await prisma.donorProfile.findUnique({ where: { id } });
@@ -214,30 +226,20 @@ export class AdminService {
       throw new NotFoundError(`Donor with ID ${id} was not found.`);
     }
 
+    const data: Prisma.DonorProfileUpdateInput = {};
+    if (input.fullName) data.fullName = input.fullName;
+    if (input.dateOfBirth) data.dateOfBirth = input.dateOfBirth;
+    if (input.address) data.address = input.address;
+    if (input.contactNumber) data.contactNumber = input.contactNumber;
+    if (input.bloodGroup) data.bloodGroup = input.bloodGroup;
+    if (input.preferences) data.preferences = input.preferences;
+
     const updated = await prisma.donorProfile.update({
       where: { id },
-      data: {
-        ...(input.fullName && { fullName: input.fullName }),
-        ...(input.dateOfBirth && { dateOfBirth: input.dateOfBirth }),
-        ...(input.address && { address: input.address }),
-        ...(input.contactNumber && { contactNumber: input.contactNumber }),
-        ...(input.bloodGroup && { bloodGroup: input.bloodGroup }),
-        ...(input.preferences && {
-          preferences: {
-            ...(typeof existing.preferences === 'object' && existing.preferences !== null
-              ? (existing.preferences as Record<string, any>)
-              : {}),
-            ...input.preferences,
-          },
-        }),
-      },
+      data,
       include: {
         user: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
+          select: { id: true, email: true, role: true },
         },
       },
     });
@@ -247,14 +249,14 @@ export class AdminService {
       action: 'DONOR_MODIFIED',
       targetType: 'DonorProfile',
       targetId: id,
-      metadata: { modifiedFields: Object.keys(input) },
+      metadata: { modifiedFields: Object.keys(data) },
     });
 
-    const eligibility = eligibilityService.evaluate({
-      dateOfBirth: updated.dateOfBirth,
-      lastDonationAt: updated.lastDonationAt,
-      deletedAt: updated.deletedAt,
-    });
+    const eligibility = eligibilityService.calculateEligibility(
+      updated.dateOfBirth,
+      updated.lastDonationAt,
+      updated.deletedAt
+    );
 
     return {
       ...updated,
@@ -307,9 +309,14 @@ export class AdminService {
 
   /**
    * Records a completed blood donation inside an atomic transaction.
-   * Updates DonorProfile.lastDonationAt simultaneously.
+   * Updates DonorProfile.lastDonationAt simultaneously and increments
+   * BloodRequest unitsFulfilled if linked.
    */
-  public async recordDonation(donorId: string, input: AdminCreateDonationInput, actorUserId?: string) {
+  public async recordDonation(
+    donorId: string,
+    input: AdminCreateDonationInput,
+    actorUserId?: string
+  ) {
     const donor = await prisma.donorProfile.findUnique({ where: { id: donorId } });
     if (!donor) {
       throw new NotFoundError(`Donor with ID ${donorId} was not found.`);
@@ -319,19 +326,49 @@ export class AdminService {
       throw new BadRequestError('Cannot record a donation for a deactivated donor profile.');
     }
 
+    let linkedRequest: any = null;
+    if (input.bloodRequestId) {
+      linkedRequest = await prisma.bloodRequest.findUnique({
+        where: { id: input.bloodRequestId },
+      });
+
+      if (!linkedRequest) {
+        throw new NotFoundError(
+          `Blood request with ID ${input.bloodRequestId} was not found.`
+        );
+      }
+
+      if (
+        linkedRequest.status === 'CANCELLED' ||
+        linkedRequest.status === 'EXPIRED'
+      ) {
+        throw new BadRequestError(
+          `Cannot record a donation against a ${linkedRequest.status.toLowerCase()} blood request.`
+        );
+      }
+
+      if (linkedRequest.unitsFulfilled >= linkedRequest.unitsRequired) {
+        throw new BadRequestError(
+          'Blood request is already fully fulfilled.'
+        );
+      }
+    }
+
     const donationDate = input.donatedAt || new Date();
 
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Create Donation Record
       const donation = await tx.donation.create({
         data: {
           donorId,
+          bloodRequestId: input.bloodRequestId || null,
           location: input.location,
           notes: input.notes,
           donatedAt: donationDate,
         },
       });
 
-      // Update donor's lastDonationAt if newer or currently null
+      // 2. Update donor's lastDonationAt if newer or currently null
       if (!donor.lastDonationAt || donationDate > donor.lastDonationAt) {
         await tx.donorProfile.update({
           where: { id: donorId },
@@ -339,16 +376,62 @@ export class AdminService {
         });
       }
 
+      // 3. Atomically update BloodRequest fulfillment and status if linked
+      if (linkedRequest) {
+        const newUnitsFulfilled = linkedRequest.unitsFulfilled + 1;
+        const isFullyFulfilled = newUnitsFulfilled >= linkedRequest.unitsRequired;
+
+        await tx.bloodRequest.update({
+          where: { id: linkedRequest.id },
+          data: {
+            unitsFulfilled: newUnitsFulfilled,
+            status: isFullyFulfilled ? 'FULFILLED' : 'PARTIALLY_FULFILLED',
+            closedAt: isFullyFulfilled ? new Date() : undefined,
+          },
+        });
+      }
+
       return donation;
     });
 
+    // 4. Audit Logging
     await auditService.log({
       actorUserId,
       action: 'DONATION_RECORDED',
       targetType: 'Donation',
       targetId: result.id,
-      metadata: { donorId, location: input.location },
+      metadata: {
+        donorId,
+        location: input.location,
+        bloodRequestId: input.bloodRequestId,
+      },
     });
+
+    if (input.bloodRequestId && linkedRequest) {
+      await auditService.log({
+        actorUserId,
+        action: 'DONATION_LINKED_TO_REQUEST',
+        targetType: 'BloodRequest',
+        targetId: input.bloodRequestId,
+        metadata: {
+          donationId: result.id,
+          donorId,
+          newUnitsFulfilled: linkedRequest.unitsFulfilled + 1,
+        },
+      });
+
+      if (linkedRequest.unitsFulfilled + 1 >= linkedRequest.unitsRequired) {
+        await auditService.log({
+          actorUserId,
+          action: 'BLOOD_REQUEST_FULFILLED',
+          targetType: 'BloodRequest',
+          targetId: input.bloodRequestId,
+          metadata: {
+            totalUnits: linkedRequest.unitsRequired,
+          },
+        });
+      }
+    }
 
     return result;
   }

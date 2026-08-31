@@ -23,14 +23,30 @@ enum BloodGroup {
   O_NEGATIVE
 }
 
+enum RequestStatus {
+  OPEN
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum RequestUrgency {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  passwordHash String
-  role         Role          @default(DONOR)
-  donorProfile DonorProfile?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  role          Role           @default(DONOR)
+  donorProfile  DonorProfile?
+  bloodRequests BloodRequest[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([email])
 }
@@ -56,16 +72,47 @@ model DonorProfile {
   @@index([deletedAt])
 }
 
+model BloodRequest {
+  id               String         @id @default(uuid())
+  createdById      String
+  createdBy        User           @relation(fields: [createdById], references: [id])
+  bloodGroup       BloodGroup
+  unitsRequired    Int
+  unitsFulfilled   Int            @default(0)
+  urgency          RequestUrgency @default(NORMAL)
+  location         String
+  requiredBy       DateTime
+  patientReference String?
+  hospitalName     String
+  contactName      String
+  contactNumber    String
+  notes            String?
+  status           RequestStatus  @default(OPEN)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  closedAt         DateTime?
+  donations        Donation[]
+
+  @@index([status])
+  @@index([bloodGroup])
+  @@index([urgency])
+  @@index([requiredBy])
+  @@index([createdAt])
+}
+
 model Donation {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   donorId        String
-  donor          DonorProfile @relation(fields: [donorId], references: [id], onDelete: Cascade)
-  donatedAt      DateTime     @default(now())
+  donor          DonorProfile  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  bloodRequestId String?
+  bloodRequest   BloodRequest? @relation(fields: [bloodRequestId], references: [id], onDelete: SetNull)
+  donatedAt      DateTime      @default(now())
   location       String
   notes          String?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
 
   @@index([donorId])
+  @@index([bloodRequestId])
   @@index([donatedAt])
 }
 
@@ -85,4 +132,3 @@ model AuditLog {
   @@index([targetType, targetId])
   @@index([createdAt])
 }
-

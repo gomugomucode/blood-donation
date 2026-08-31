@@ -82,6 +82,11 @@ export const adminCreateDonationSchema = z.object({
     .max(500, 'Clinical notes cannot exceed 500 characters')
     .trim()
     .optional(),
+  bloodRequestId: z
+    .string()
+    .uuid('Invalid blood request ID format: must be a valid UUID')
+    .optional()
+    .nullable(),
 });
 
 export const donorIdParamSchema = z.object({
