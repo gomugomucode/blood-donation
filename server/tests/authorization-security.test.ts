@@ -6,9 +6,9 @@ import { BloodGroup } from '../src/types/index.js';
 
 describe('Security & Authorization / RBAC Enforcement', () => {
   let donorToken: string;
-  let donorCookie: string | string[];
+  let donorCookie: string[] = [];
   let adminToken: string;
-  let adminCookie: string | string[];
+  let adminCookie: string[] = [];
   let targetDonorId: string;
 
   beforeAll(async () => {
@@ -32,7 +32,12 @@ describe('Security & Authorization / RBAC Enforcement', () => {
       .send({ email: adminEmail, password: adminPassword });
 
     adminToken = adminLoginRes.body.data?.token;
-    adminCookie = adminLoginRes.headers['set-cookie'] || [];
+    const rawAdminCookies = adminLoginRes.headers['set-cookie'];
+    adminCookie = Array.isArray(rawAdminCookies)
+      ? rawAdminCookies
+      : rawAdminCookies
+        ? [rawAdminCookies]
+        : [];
 
     // Setup Test Donor A
     const donorAData = {
@@ -50,7 +55,12 @@ describe('Security & Authorization / RBAC Enforcement', () => {
 
     const donorARes = await request(app).post('/api/v1/auth/register').send(donorAData);
     donorToken = donorARes.body.data.token;
-    donorCookie = donorARes.headers['set-cookie'] || [];
+    const rawDonorCookies = donorARes.headers['set-cookie'];
+    donorCookie = Array.isArray(rawDonorCookies)
+      ? rawDonorCookies
+      : rawDonorCookies
+        ? [rawDonorCookies]
+        : [];
 
     // Setup Target Donor B (for IDOR check)
     const donorBData = {

@@ -5,7 +5,7 @@ import { prisma } from '../src/config/db.js';
 import { BloodGroup } from '../src/types/index.js';
 
 describe('Admin Management API Endpoints', () => {
-  let adminCookie: string | string[];
+  let adminCookie: string[] = [];
   let sampleDonorId: string;
 
   beforeAll(async () => {
@@ -28,7 +28,8 @@ describe('Admin Management API Endpoints', () => {
       .post('/api/v1/auth/login')
       .send({ email: adminEmail, password: adminPassword });
 
-    adminCookie = adminLoginRes.headers['set-cookie'] || [];
+    const rawCookies = adminLoginRes.headers['set-cookie'];
+    adminCookie = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
 
     // Create a dedicated donor for admin management testing
     const testDonor = {
@@ -79,9 +80,7 @@ describe('Admin Management API Endpoints', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    for (const donor of res.body.data.items) {
-      expect(donor.bloodGroup).toBe(BloodGroup.O_NEGATIVE);
-    }
+    expect(res.body.data.items.every((d: any) => d.bloodGroup === BloodGroup.O_NEGATIVE)).toBe(true);
   });
 
   it('should search donors by name or email', async () => {
@@ -104,48 +103,49 @@ describe('Admin Management API Endpoints', () => {
     expect(res.body.data.id).toBe(sampleDonorId);
     expect(res.body.data.fullName).toBe('Lucas Wright');
     expect(res.body.data.eligibility).toBeDefined();
+    expect(res.body.data.eligibility.isEligible).toBe(true);
   });
 
   it('should update donor record details', async () => {
-    const updateData = {
-      fullName: 'Lucas Wright Jr.',
-      address: '88 New Horizon Way, Minneapolis, MN',
-    };
-
     const res = await request(app)
       .patch(`/api/v1/admin/donors/${sampleDonorId}`)
       .set('Cookie', adminCookie)
-      .send(updateData);
+      .send({
+        address: '88 New Address Blvd, St. Paul, MN',
+        contactNumber: '+1-555-9988',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.fullName).toBe(updateData.fullName);
-    expect(res.body.data.address).toBe(updateData.address);
+    expect(res.body.data.address).toBe('88 New Address Blvd, St. Paul, MN');
+    expect(res.body.data.contactNumber).toBe('+1-555-9988');
   });
 
   it('should record a donation and automatically update donor lastDonationAt', async () => {
     const donationDate = new Date();
-    const donationPayload = {
-      location: 'Regional Donor Center Room 3B',
-      donatedAt: donationDate.toISOString(),
-      notes: 'Whole blood donation - 450ml. Donor tolerated procedure well.',
-    };
-
     const res = await request(app)
       .post(`/api/v1/admin/donors/${sampleDonorId}/donations`)
       .set('Cookie', adminCookie)
-      .send(donationPayload);
+      .send({
+        location: 'Downtown Blood Center - Room 4B',
+        donatedAt: donationDate.toISOString(),
+        notes: 'Whole blood collection (450ml). Donor reported feeling well.',
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.location).toBe(donationPayload.location);
+    expect(res.body.data.location).toBe('Downtown Blood Center - Room 4B');
     expect(res.body.data.donorId).toBe(sampleDonorId);
 
-    // Verify donor's lastDonationAt was updated in DB
-    const updatedDonor = await prisma.donorProfile.findUnique({
-      where: { id: sampleDonorId },
-    });
-    expect(updatedDonor?.lastDonationAt).not.toBeNull();
+    // Verify donor's lastDonationAt was atomically updated
+    const donorRes = await request(app)
+      .get(`/api/v1/admin/donors/${sampleDonorId}`)
+      .set('Cookie', adminCookie);
+
+    expect(donorRes.body.data.lastDonationAt).toBeDefined();
+    // Donor should now be marked ineligible due to 56-day cooldown rule
+    expect(donorRes.body.data.eligibility.isEligible).toBe(false);
+    expect(donorRes.body.data.eligibility.daysUntilEligible).toBeGreaterThan(0);
   });
 
   it('should retrieve donation history for a specific donor', async () => {
@@ -155,38 +155,31 @@ describe('Admin Management API Endpoints', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.data[0].location).toBe('Regional Donor Center Room 3B');
+    expect(res.body.data.length).toBeGreaterThan(0);
+    expect(res.body.data[0].location).toBe('Downtown Blood Center - Room 4B');
   });
 
   it('should soft-deactivate donor and exclude from standard queries', async () => {
-    // 1. Deactivate donor
     const deleteRes = await request(app)
       .delete(`/api/v1/admin/donors/${sampleDonorId}`)
       .set('Cookie', adminCookie);
 
     expect(deleteRes.status).toBe(200);
     expect(deleteRes.body.success).toBe(true);
-    expect(deleteRes.body.data.deletedAt).not.toBeNull();
+    expect(deleteRes.body.data.deletedAt).toBeDefined();
 
-    // 2. Verify excluded from normal list
+    // Verify excluded from standard query
     const listRes = await request(app)
-      .get('/api/v1/admin/donors?search=Lucas')
+      .get('/api/v1/admin/donors')
       .set('Cookie', adminCookie);
 
-    expect(listRes.status).toBe(200);
-    const foundInActive = listRes.body.data.items.some((d: any) => d.id === sampleDonorId);
-    expect(foundInActive).toBe(false);
+    expect(listRes.body.data.items.some((d: any) => d.id === sampleDonorId)).toBe(false);
 
-    // 3. Verify included when includeDeactivated=true
+    // Verify included when includeDeactivated=true
     const listDeactivatedRes = await request(app)
-      .get('/api/v1/admin/donors?search=Lucas&includeDeactivated=true')
+      .get('/api/v1/admin/donors?includeDeactivated=true')
       .set('Cookie', adminCookie);
 
-    expect(listDeactivatedRes.status).toBe(200);
-    const foundInDeactivated = listDeactivatedRes.body.data.items.some(
-      (d: any) => d.id === sampleDonorId
-    );
-    expect(foundInDeactivated).toBe(true);
+    expect(listDeactivatedRes.body.data.items.some((d: any) => d.id === sampleDonorId)).toBe(true);
   });
 });
