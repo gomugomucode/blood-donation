@@ -15,12 +15,24 @@ describe('Security & Authorization / RBAC Enforcement', () => {
     // Setup Admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@blooddonation.org';
     const adminPassword = process.env.ADMIN_PASSWORD || 'AdminSecurePass123!';
+    const passwordHash = await (await import('bcryptjs')).default.hash(adminPassword, 10);
+
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: { passwordHash, role: 'ADMIN' },
+      create: {
+        email: adminEmail,
+        passwordHash,
+        role: 'ADMIN',
+      },
+    });
+
     const adminLoginRes = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: adminEmail, password: adminPassword });
 
-    adminToken = adminLoginRes.body.data.token;
-    adminCookie = adminLoginRes.headers['set-cookie'];
+    adminToken = adminLoginRes.body.data?.token;
+    adminCookie = adminLoginRes.headers['set-cookie'] || [];
 
     // Setup Test Donor A
     const donorAData = {

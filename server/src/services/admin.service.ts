@@ -8,6 +8,7 @@ import {
 } from '../validators/admin.validator.js';
 import { PaginatedResult, DashboardMetrics } from '../types/index.js';
 import { eligibilityService } from './eligibility.service.js';
+import { auditService } from './audit.service.js';
 
 export class AdminService {
   /**
@@ -205,8 +206,9 @@ export class AdminService {
 
   /**
    * Updates clinical and administrative donor information.
+   * Explicitly maps allowed DTO fields to prevent mass assignment vulnerabilities.
    */
-  public async updateDonor(id: string, input: AdminUpdateDonorInput) {
+  public async updateDonor(id: string, input: AdminUpdateDonorInput, actorUserId?: string) {
     const existing = await prisma.donorProfile.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundError(`Donor with ID ${id} was not found.`);
@@ -240,6 +242,14 @@ export class AdminService {
       },
     });
 
+    await auditService.log({
+      actorUserId,
+      action: 'DONOR_MODIFIED',
+      targetType: 'DonorProfile',
+      targetId: id,
+      metadata: { modifiedFields: Object.keys(input) },
+    });
+
     const eligibility = eligibilityService.evaluate({
       dateOfBirth: updated.dateOfBirth,
       lastDonationAt: updated.lastDonationAt,
@@ -255,7 +265,7 @@ export class AdminService {
   /**
    * Soft-deactivates donor record while preserving historical integrity.
    */
-  public async deactivateDonor(id: string) {
+  public async deactivateDonor(id: string, actorUserId?: string) {
     const existing = await prisma.donorProfile.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundError(`Donor with ID ${id} was not found.`);
@@ -268,6 +278,13 @@ export class AdminService {
     const deactivated = await prisma.donorProfile.update({
       where: { id },
       data: { deletedAt: new Date() },
+    });
+
+    await auditService.log({
+      actorUserId,
+      action: 'DONOR_DEACTIVATED',
+      targetType: 'DonorProfile',
+      targetId: id,
     });
 
     return deactivated;
@@ -292,7 +309,7 @@ export class AdminService {
    * Records a completed blood donation inside an atomic transaction.
    * Updates DonorProfile.lastDonationAt simultaneously.
    */
-  public async recordDonation(donorId: string, input: AdminCreateDonationInput) {
+  public async recordDonation(donorId: string, input: AdminCreateDonationInput, actorUserId?: string) {
     const donor = await prisma.donorProfile.findUnique({ where: { id: donorId } });
     if (!donor) {
       throw new NotFoundError(`Donor with ID ${donorId} was not found.`);
@@ -323,6 +340,14 @@ export class AdminService {
       }
 
       return donation;
+    });
+
+    await auditService.log({
+      actorUserId,
+      action: 'DONATION_RECORDED',
+      targetType: 'Donation',
+      targetId: result.id,
+      metadata: { donorId, location: input.location },
     });
 
     return result;

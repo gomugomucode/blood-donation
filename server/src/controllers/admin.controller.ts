@@ -1,10 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { adminService } from '../services/admin.service.js';
+import { auditService } from '../services/audit.service.js';
 import { sendSuccess } from '../utils/response.js';
+import { AuthenticatedRequest } from '../types/index.js';
 
 export class AdminController {
   public getDashboard = async (
-    _req: Request,
+    _req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
@@ -17,7 +19,7 @@ export class AdminController {
   };
 
   public getDonors = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
@@ -30,7 +32,7 @@ export class AdminController {
   };
 
   public getDonorById = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
@@ -44,13 +46,13 @@ export class AdminController {
   };
 
   public updateDonor = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
       const donorId = req.params.id as string;
-      const updated = await adminService.updateDonor(donorId, req.body);
+      const updated = await adminService.updateDonor(donorId, req.body, req.user?.id);
       sendSuccess(res, updated, 'Donor record updated successfully');
     } catch (error) {
       next(error);
@@ -58,13 +60,13 @@ export class AdminController {
   };
 
   public deactivateDonor = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
       const donorId = req.params.id as string;
-      const result = await adminService.deactivateDonor(donorId);
+      const result = await adminService.deactivateDonor(donorId, req.user?.id);
       sendSuccess(res, result, 'Donor record deactivated successfully');
     } catch (error) {
       next(error);
@@ -72,7 +74,7 @@ export class AdminController {
   };
 
   public getDonorDonations = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
@@ -86,14 +88,27 @@ export class AdminController {
   };
 
   public recordDonation = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
       const donorId = req.params.id as string;
-      const donation = await adminService.recordDonation(donorId, req.body);
+      const donation = await adminService.recordDonation(donorId, req.body, req.user?.id);
       sendSuccess(res, donation, 'Donation recorded successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getAuditLogs = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const logs = await auditService.getAuditLogs(req.query as any);
+      sendSuccess(res, logs);
     } catch (error) {
       next(error);
     }

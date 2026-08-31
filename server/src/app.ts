@@ -1,30 +1,38 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
+import { prisma } from './config/db.js';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
 export const createApp = (): Express => {
   const app = express();
 
-  // 1. Security Headers
+  // 1. Security Headers (Helmet)
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Managed separately or for SPA compatibility
+      contentSecurityPolicy: false, // SPA client handles CSP or static host
       crossOriginEmbedderPolicy: false,
     })
   );
 
-  // 2. Strict CORS Configuration (Never use '*' for authenticated apps)
-  const allowedOrigins = [env.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+  // 2. Strict CORS Configuration
+  const allowedOrigins = [
+    env.CLIENT_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+  ];
+
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, or same-origin)
+        // Allow requests with no origin (e.g. mobile, curl, or same-origin)
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
@@ -37,31 +45,76 @@ export const createApp = (): Express => {
     })
   );
 
-  // 3. Rate Limiting for Auth Endpoints
+  // 3. Multi-Tier Rate Limiting
+  // Skip rate limiting in automated test runs
+  const isTest = env.NODE_ENV === 'test';
+
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Max 100 requests per 15 minutes per IP
+    max: isTest ? 10000 : 30, // 30 requests per 15 min per IP for auth
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTest,
     message: {
       success: false,
-      message: 'Too many authentication attempts from this IP, please try again in 15 minutes.',
+      message: 'Too many authentication attempts. Please try again in 15 minutes.',
     },
   });
-  app.use('/api/v1/auth', authLimiter);
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isTest ? 10000 : 500, // 500 requests per 15 min per IP for general API
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => isTest,
+    message: {
+      success: false,
+      message: 'Rate limit exceeded. Please reduce request frequency.',
+    },
+  });
+
+  app.use('/api/v1/auth/login', authLimiter);
+  app.use('/api/v1/auth/register', authLimiter);
+  app.use('/api/v1', apiLimiter);
 
   // 4. General Middlewares
-  if (env.NODE_ENV !== 'test') {
+  if (!isTest) {
     app.use(morgan('dev'));
   }
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-  // 5. Mount API Routes
+  // 5. Root Health Check Handlers
+  const healthCheckHandler = async (_req: Request, res: Response): Promise<void> => {
+    try {
+      // Verify database reachability
+      await prisma.$queryRaw`SELECT 1`;
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'Blood Donation Management API',
+        database: 'connected',
+        version: '1.0.0',
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'degraded',
+        timestamp: new Date().toISOString(),
+        service: 'Blood Donation Management API',
+        database: 'disconnected',
+        error: env.NODE_ENV === 'production' ? 'Database connection error' : (error as Error).message,
+      });
+    }
+  };
+
+  app.get('/health', healthCheckHandler);
+  app.get('/api/v1/health', healthCheckHandler);
+
+  // 6. Mount API Routes
   app.use('/api/v1', routes);
 
-  // 6. 404 and Global Error Handling
+  // 7. 404 and Global Error Handling
   app.use(notFoundHandler);
   app.use(errorHandler);
 

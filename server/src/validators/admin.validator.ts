@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { BloodGroup } from '@prisma/client';
 import { bloodGroupEnum } from './auth.validator.js';
 
 export const adminDonorQuerySchema = z.object({
@@ -11,9 +10,13 @@ export const adminDonorQuerySchema = z.object({
   limit: z
     .string()
     .optional()
-    .default('10')
-    .transform((val) => Math.min(100, Math.max(1, parseInt(val, 10) || 10))),
-  search: z.string().trim().optional(),
+    .default('20')
+    .transform((val) => Math.min(100, Math.max(1, parseInt(val, 10) || 20))),
+  search: z
+    .string()
+    .trim()
+    .max(100, 'Search query cannot exceed 100 characters')
+    .optional(),
   bloodGroup: bloodGroupEnum.optional(),
   includeDeactivated: z
     .string()
@@ -34,6 +37,12 @@ export const adminUpdateDonorSchema = z.object({
       message: 'Invalid date of birth format. Must be an ISO date string (YYYY-MM-DD)',
     })
     .transform((val) => new Date(val))
+    .refine((dob) => dob <= new Date(), {
+      message: 'Date of birth cannot be in the future',
+    })
+    .refine((dob) => dob.getFullYear() > 1900, {
+      message: 'Date of birth must be after year 1900',
+    })
     .optional(),
   address: z
     .string()
@@ -64,16 +73,34 @@ export const adminCreateDonationSchema = z.object({
     .refine((val) => !val || !isNaN(Date.parse(val)), {
       message: 'Invalid donation date format. Must be an ISO date string',
     })
-    .transform((val) => (val ? new Date(val) : new Date())),
+    .transform((val) => (val ? new Date(val) : new Date()))
+    .refine((d) => d <= new Date(Date.now() + 24 * 60 * 60 * 1000), {
+      message: 'Donation date cannot be in the future',
+    }),
   notes: z
     .string()
-    .max(500, 'Notes cannot exceed 500 characters')
+    .max(500, 'Clinical notes cannot exceed 500 characters')
     .trim()
     .optional(),
 });
 
 export const donorIdParamSchema = z.object({
-  id: z.string().uuid('Invalid donor ID format'),
+  id: z.string().uuid('Invalid donor ID format: must be a valid UUID'),
+});
+
+export const auditLogQuerySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .default('1')
+    .transform((val) => Math.max(1, parseInt(val, 10) || 1)),
+  limit: z
+    .string()
+    .optional()
+    .default('20')
+    .transform((val) => Math.min(100, Math.max(1, parseInt(val, 10) || 20))),
+  action: z.string().max(50).optional(),
+  targetType: z.string().max(50).optional(),
 });
 
 export type AdminDonorQueryInput = z.infer<typeof adminDonorQuerySchema>;

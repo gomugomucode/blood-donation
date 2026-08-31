@@ -6,6 +6,7 @@ import { Role } from '../types/index.js';
 import { RegisterInput, LoginInput } from '../validators/auth.validator.js';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../utils/errors.js';
 import { eligibilityService } from './eligibility.service.js';
+import { auditService } from './audit.service.js';
 
 export interface AuthSessionResult {
   user: {
@@ -29,10 +30,11 @@ export interface AuthSessionResult {
 
 export class AuthService {
   /**
-   * Generates a signed JWT session token.
+   * Generates a signed JWT session token with minimal standard claims and explicit algorithm.
    */
   public generateToken(userId: string, role: Role): string {
-    return jwt.sign({ userId, role }, env.JWT_SECRET, {
+    return jwt.sign({ sub: userId, role }, env.JWT_SECRET, {
+      algorithm: 'HS256',
       expiresIn: env.JWT_EXPIRES_IN as any,
     });
   }
@@ -80,6 +82,15 @@ export class AuthService {
 
     const token = this.generateToken(result.user.id, result.user.role);
 
+    // Record non-sensitive audit log
+    await auditService.log({
+      actorUserId: result.user.id,
+      action: 'DONOR_REGISTER',
+      targetType: 'User',
+      targetId: result.user.id,
+      metadata: { bloodGroup: result.donorProfile.bloodGroup },
+    });
+
     return {
       user: {
         id: result.user.id,
@@ -122,6 +133,15 @@ export class AuthService {
     }
 
     const token = this.generateToken(user.id, user.role);
+
+    if (user.role === Role.ADMIN) {
+      await auditService.log({
+        actorUserId: user.id,
+        action: 'ADMIN_LOGIN',
+        targetType: 'User',
+        targetId: user.id,
+      });
+    }
 
     return {
       user: {

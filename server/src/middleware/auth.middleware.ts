@@ -6,7 +6,8 @@ import { UnauthorizedError, ForbiddenError } from '../utils/errors.js';
 import { AuthenticatedRequest, Role, AuthUser } from '../types/index.js';
 
 interface JwtPayload {
-  userId: string;
+  sub?: string;
+  userId?: string;
   role: Role;
   iat?: number;
   exp?: number;
@@ -35,13 +36,20 @@ export const authenticate = async (
 
     let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+      decoded = jwt.verify(token, env.JWT_SECRET, {
+        algorithms: ['HS256'],
+      }) as JwtPayload;
     } catch {
       throw new UnauthorizedError('Invalid or expired authentication session. Please log in again.');
     }
 
+    const targetUserId = decoded.sub || decoded.userId;
+    if (!targetUserId) {
+      throw new UnauthorizedError('Malformed session token subject.');
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: targetUserId },
       include: {
         donorProfile: {
           select: {
@@ -53,7 +61,7 @@ export const authenticate = async (
     });
 
     if (!user) {
-      throw new UnauthorizedError('User account not found.');
+      throw new UnauthorizedError('User account not found or session revoked.');
     }
 
     const authUser: AuthUser = {

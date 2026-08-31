@@ -7,6 +7,7 @@ import {
   adminUpdateDonorSchema,
   adminCreateDonationSchema,
   donorIdParamSchema,
+  auditLogQuerySchema,
 } from '../validators/admin.validator.js';
 import { Role } from '../types/index.js';
 
@@ -49,6 +50,12 @@ router.post(
   validateParams(donorIdParamSchema),
   validateBody(adminCreateDonationSchema),
   adminController.recordDonation
+);
+
+router.get(
+  '/audit-logs',
+  validateQuery(auditLogQuerySchema),
+  adminController.getAuditLogs
 );
 
 export default router;
