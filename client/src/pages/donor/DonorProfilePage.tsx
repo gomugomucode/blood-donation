@@ -2,7 +2,6 @@ import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { donorService } from '../../services/donor.service.js';
 import { ProfileForm } from '../../components/donor/ProfileForm.js';
-import { DonorCard } from '../../components/donor/DonorCard.js';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/common/Card.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
