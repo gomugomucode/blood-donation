@@ -19,7 +19,6 @@ import {
   Calendar,
   HeartPulse,
   AlertCircle,
-  Clock,
   Plus,
 } from 'lucide-react';
 import { BloodGroup } from '../../types/index.js';

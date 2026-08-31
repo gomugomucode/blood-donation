@@ -87,7 +87,6 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
 
   // Modals state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
 
   const [selectedCandidate, setSelectedCandidate] = useState<DonorMatchCandidate | null>(null);
   const [notifyChannel, setNotifyChannel] = useState<'IN_APP' | 'SMS' | 'EMAIL'>('IN_APP');
@@ -135,7 +134,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
   const canModify = !isFulfilled && !isCancelled && !isExpired;
 
   const handleCancelSubmit = async () => {
-    await cancelMutation.mutateAsync(cancelReason || undefined);
+    await cancelMutation.mutateAsync();
     setIsCancelModalOpen(false);
   };
 
