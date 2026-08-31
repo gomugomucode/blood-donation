@@ -1,6 +1,8 @@
 import React from 'react';
 import { cn, formatBloodGroup } from '../../lib/utils.js';
 import { BloodGroup } from '../../types/index.js';
+import { RequestStatus, RequestUrgency } from '../../types/blood-request.js';
+import { AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 export interface BadgeProps {
   variant?: 'neutral' | 'success' | 'warning' | 'danger' | 'crimson' | 'info';
@@ -74,4 +76,104 @@ export const EligibilityBadge: React.FC<{ isEligible: boolean; className?: strin
       Ineligible
     </Badge>
   );
+};
+
+export const RequestUrgencyBadge: React.FC<{ urgency: RequestUrgency; className?: string }> = ({
+  urgency,
+  className,
+}) => {
+  switch (urgency) {
+    case 'CRITICAL':
+      return (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold rounded-md bg-red-100 text-red-800 border border-red-300 animate-pulse',
+            className
+          )}
+        >
+          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+          CRITICAL
+        </span>
+      );
+    case 'HIGH':
+      return (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-md bg-amber-100 text-amber-800 border border-amber-300',
+            className
+          )}
+        >
+          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+          HIGH
+        </span>
+      );
+    case 'NORMAL':
+      return (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200',
+            className
+          )}
+        >
+          NORMAL
+        </span>
+      );
+    case 'LOW':
+    default:
+      return (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md bg-slate-100 text-slate-600 border border-slate-200',
+            className
+          )}
+        >
+          LOW
+        </span>
+      );
+  }
+};
+
+export const RequestStatusBadge: React.FC<{ status: RequestStatus; className?: string }> = ({
+  status,
+  className,
+}) => {
+  switch (status) {
+    case 'OPEN':
+      return (
+        <Badge variant="info" className={className}>
+          <Clock className="w-3 h-3 mr-0.5" />
+          Open
+        </Badge>
+      );
+    case 'PARTIALLY_FULFILLED':
+      return (
+        <Badge variant="warning" className={className}>
+          <Clock className="w-3 h-3 mr-0.5" />
+          Partial
+        </Badge>
+      );
+    case 'FULFILLED':
+      return (
+        <Badge variant="success" className={className}>
+          <CheckCircle2 className="w-3 h-3 mr-0.5" />
+          Fulfilled
+        </Badge>
+      );
+    case 'CANCELLED':
+      return (
+        <Badge variant="neutral" className={className}>
+          <XCircle className="w-3 h-3 mr-0.5" />
+          Cancelled
+        </Badge>
+      );
+    case 'EXPIRED':
+      return (
+        <Badge variant="danger" className={className}>
+          <Clock className="w-3 h-3 mr-0.5" />
+          Expired
+        </Badge>
+      );
+    default:
+      return <Badge className={className}>{status}</Badge>;
+  }
 };

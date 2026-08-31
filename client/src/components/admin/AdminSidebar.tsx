@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, HeartHandshake } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, HeartHandshake } from 'lucide-react';
 import { cn } from '../../lib/utils.js';
 
 export const AdminSidebar: React.FC = () => {
@@ -10,6 +10,12 @@ export const AdminSidebar: React.FC = () => {
       end: true,
       label: 'Dashboard Overview',
       icon: LayoutDashboard,
+    },
+    {
+      to: '/admin/requests',
+      end: false,
+      label: 'Blood Requests',
+      icon: HeartPulse,
     },
     {
       to: '/admin/donors',
