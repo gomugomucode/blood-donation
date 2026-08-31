@@ -8,7 +8,7 @@ const startServer = async () => {
     await prisma.$connect();
     console.log('✅ Connected to PostgreSQL database successfully.');
 
-    const server = app.listen(env.PORT, () => {
+    const server = app.listen(Number(env.PORT), '0.0.0.0', () => {
       console.log(`🚀 Blood Donation API server running at http://localhost:${env.PORT}`);
       console.log(`📡 Environment: ${env.NODE_ENV}`);
       console.log(`🔗 Allowed Client URL: ${env.CLIENT_URL}`);
