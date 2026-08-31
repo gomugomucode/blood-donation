@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HeartHandshake, ShieldCheck, Droplet, Users, CalendarCheck, ArrowRight, Activity } from 'lucide-react';
+import { ShieldCheck, Droplet, Users, CalendarCheck, ArrowRight, Activity } from 'lucide-react';
 import { Button } from '../components/common/Button.js';
 import { Card } from '../components/common/Card.js';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { LoginForm } from '../components/auth/LoginForm.js';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/common/Card.js';
+import { Card, CardContent } from '../components/common/Card.js';
 import { Droplet } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {

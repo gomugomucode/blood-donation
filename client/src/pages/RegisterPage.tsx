@@ -1,6 +1,6 @@
 import React from 'react';
 import { RegistrationForm } from '../components/auth/RegistrationForm.js';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/common/Card.js';
+import { Card, CardContent } from '../components/common/Card.js';
 import { HeartHandshake } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
