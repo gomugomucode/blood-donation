@@ -7,6 +7,7 @@ import {
   validateQuery,
 } from '../middleware/validate.middleware.js';
 import { bloodRequestController } from '../controllers/blood-request.controller.js';
+import { opportunityController } from '../controllers/opportunity.controller.js';
 import {
   createBloodRequestSchema,
   updateBloodRequestSchema,
@@ -15,6 +16,9 @@ import {
   notifyDonorCandidateSchema,
   bloodRequestIdParamSchema,
 } from '../validators/blood-request.validator.js';
+import {
+  createOpportunitiesBatchSchema,
+} from '../validators/opportunity.validator.js';
 
 const router = Router();
 
@@ -65,6 +69,20 @@ router.post(
   validateParams(bloodRequestIdParamSchema),
   validateBody(notifyDonorCandidateSchema),
   bloodRequestController.notifyCandidate
+);
+
+// Opportunities & Outreach
+router.post(
+  '/:id/opportunities',
+  validateParams(bloodRequestIdParamSchema),
+  validateBody(createOpportunitiesBatchSchema),
+  opportunityController.createBatch
+);
+
+router.get(
+  '/:id/opportunities',
+  validateParams(bloodRequestIdParamSchema),
+  opportunityController.getForBloodRequest
 );
 
 export default router;

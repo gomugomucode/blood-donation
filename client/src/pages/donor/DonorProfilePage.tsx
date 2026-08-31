@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { donorService } from '../../services/donor.service.js';
 import { ProfileForm } from '../../components/donor/ProfileForm.js';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/common/Card.js';
+import { Button } from '../../components/common/Button.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
-import { User, Shield, Info } from 'lucide-react';
+import { User, Shield, Info, Bell, CheckCircle2 } from 'lucide-react';
 import { formatBloodGroup, formatDate } from '../../lib/utils.js';
 
 export const DonorProfilePage: React.FC = () => {
@@ -20,6 +21,9 @@ export const DonorProfilePage: React.FC = () => {
     queryKey: ['donor', 'profile'],
     queryFn: () => donorService.getProfile(),
   });
+
+  const [notifConsent, setNotifConsent] = useState(true);
+  const [savedConsent, setSavedConsent] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner label="Loading donor profile..." />;
@@ -40,17 +44,22 @@ export const DonorProfilePage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
 
+  const handleSaveConsent = () => {
+    setSavedConsent(true);
+    setTimeout(() => setSavedConsent(false), 3000);
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Donor Profile & Settings</h1>
         <p className="text-xs text-slate-500">
-          Manage your personal contact details, residential address, and profile settings.
+          Manage your personal contact details, residential address, and outreach preferences.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Left: Edit Form */}
+        {/* Left: Edit Form & Preferences */}
         <div className="md:col-span-7 space-y-6">
           <Card>
             <CardHeader>
@@ -61,6 +70,45 @@ export const DonorProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <ProfileForm initialData={profile} onSuccess={handleUpdateSuccess} />
+            </CardContent>
+          </Card>
+
+          {/* Donation Opportunities & Outreach Consent */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="w-4 h-4 text-crimson-600" />
+                Outreach & Notification Consent
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between gap-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-900 block">
+                    Receive Blood Donation Outreach Alerts
+                  </span>
+                  <p className="text-2xs text-slate-500 leading-relaxed">
+                    Allow clinical coordinators to send you in-app alerts when a matching blood request requires your blood type in your area.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifConsent}
+                  onChange={(e) => setNotifConsent(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                {savedConsent ? (
+                  <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Preferences saved
+                  </span>
+                ) : <span />}
+                <Button size="sm" variant="outline" onClick={handleSaveConsent}>
+                  Update Preferences
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

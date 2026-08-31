@@ -389,6 +389,18 @@ export class AdminService {
             closedAt: isFullyFulfilled ? new Date() : undefined,
           },
         });
+
+        // 4. Transition donor's opportunity for this request to FULFILLED
+        await tx.donorOpportunity.updateMany({
+          where: {
+            donorId,
+            bloodRequestId: linkedRequest.id,
+            status: { in: ['ACCEPTED', 'PENDING', 'VIEWED'] },
+          },
+          data: {
+            status: 'FULFILLED',
+          },
+        });
       }
 
       return donation;

@@ -15,6 +15,8 @@ import { AdminLoginPage } from '../pages/AdminLoginPage.js';
 import { DonorDashboardPage } from '../pages/donor/DonorDashboardPage.js';
 import { DonorProfilePage } from '../pages/donor/DonorProfilePage.js';
 import { DonorHistoryPage } from '../pages/donor/DonorHistoryPage.js';
+import { DonorOpportunitiesPage } from '../pages/donor/DonorOpportunitiesPage.js';
+import { DonorOpportunityDetailPage } from '../pages/donor/DonorOpportunityDetailPage.js';
 
 // Admin Pages
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.js';
@@ -46,6 +48,8 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route path="/dashboard" element={<DonorDashboardPage />} />
+        <Route path="/dashboard/opportunities" element={<DonorOpportunitiesPage />} />
+        <Route path="/dashboard/opportunities/:id" element={<DonorOpportunityDetailPage />} />
         <Route path="/profile" element={<DonorProfilePage />} />
         <Route path="/history" element={<DonorHistoryPage />} />
       </Route>

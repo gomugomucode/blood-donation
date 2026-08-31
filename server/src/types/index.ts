@@ -1,7 +1,27 @@
 import { Request } from 'express';
-import { Role, BloodGroup, RequestStatus, RequestUrgency } from '@prisma/client';
+import {
+  Role,
+  BloodGroup,
+  RequestStatus,
+  RequestUrgency,
+  NotificationChannel,
+  NotificationStatus,
+  NotificationType,
+  OpportunityStatus,
+  DeclineReason,
+} from '@prisma/client';
 
-export { Role, BloodGroup, RequestStatus, RequestUrgency };
+export {
+  Role,
+  BloodGroup,
+  RequestStatus,
+  RequestUrgency,
+  NotificationChannel,
+  NotificationStatus,
+  NotificationType,
+  OpportunityStatus,
+  DeclineReason,
+};
 
 export interface AuthUser {
   id: string;
@@ -116,4 +136,39 @@ export interface BloodRequestDashboardMetrics {
   partiallyFulfilledRequests: number;
   fulfilledTodayRequests: number;
   expiredRequests: number;
+}
+
+export interface DonorConsentPreferences {
+  allowBloodRequestNotifications: boolean;
+  preferredNotificationChannel: NotificationChannel;
+  locationSharingConsent: boolean;
+  preferredContactTime?: string;
+}
+
+export interface NotificationPayload {
+  userId: string;
+  opportunityId?: string;
+  channel: NotificationChannel;
+  type: NotificationType;
+  title: string;
+  message: string;
+}
+
+export interface NotificationResult {
+  id: string;
+  channel: NotificationChannel;
+  status: NotificationStatus;
+  sentAt: Date | null;
+}
+
+export interface OutreachStats {
+  totalCandidates: number;
+  totalOpportunities: number;
+  pending: number;
+  viewed: number;
+  accepted: number;
+  declined: number;
+  expired: number;
+  cancelled: number;
+  fulfilled: number;
 }

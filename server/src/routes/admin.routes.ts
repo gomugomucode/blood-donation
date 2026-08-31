@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { adminController } from '../controllers/admin.controller.js';
+import { opportunityController } from '../controllers/opportunity.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery, validateParams } from '../middleware/validate.middleware.js';
 import {
@@ -9,12 +10,17 @@ import {
   donorIdParamSchema,
   auditLogQuerySchema,
 } from '../validators/admin.validator.js';
+import {
+  opportunityIdParamSchema,
+  cancelOpportunitySchema,
+} from '../validators/opportunity.validator.js';
 import { Role } from '../types/index.js';
 
 const router = Router();
 
 // Strict security invariant: All /api/v1/admin/* routes require ADMIN role
-router.use(authenticate, requireRole(Role.ADMIN));
+router.use(authenticate);
+router.use(requireRole(Role.ADMIN));
 
 router.get('/dashboard', adminController.getDashboard);
 
@@ -56,6 +62,14 @@ router.get(
   '/audit-logs',
   validateQuery(auditLogQuerySchema),
   adminController.getAuditLogs
+);
+
+// Opportunities management
+router.post(
+  '/opportunities/:id/cancel',
+  validateParams(opportunityIdParamSchema),
+  validateBody(cancelOpportunitySchema),
+  opportunityController.cancel
 );
 
 export default router;

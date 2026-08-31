@@ -2,13 +2,15 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { donorService } from '../../services/donor.service.js';
+import { useDonorOpportunities } from '../../hooks/useOpportunities.js';
 import { StatCard } from '../../components/common/StatCard.js';
 import { EligibilityCard } from '../../components/donor/EligibilityCard.js';
 import { DonorCard } from '../../components/donor/DonorCard.js';
+import { Card } from '../../components/common/Card.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
 import { Button } from '../../components/common/Button.js';
-import { Droplet, History, User, HeartHandshake } from 'lucide-react';
+import { Droplet, History, User, HeartHandshake, Sparkles, ArrowRight } from 'lucide-react';
 import { formatDate } from '../../lib/utils.js';
 
 export const DonorDashboardPage: React.FC = () => {
@@ -30,6 +32,8 @@ export const DonorDashboardPage: React.FC = () => {
     queryFn: () => donorService.getDonations(),
   });
 
+  const { data: opportunitiesData } = useDonorOpportunities({ limit: 5 });
+
   if (isProfileLoading || isDonationsLoading) {
     return <LoadingSpinner label="Loading your donor dashboard..." />;
   }
@@ -45,6 +49,9 @@ export const DonorDashboardPage: React.FC = () => {
   }
 
   const totalDonationsCount = donations?.length || 0;
+  const activeOpportunities = (opportunitiesData?.items || []).filter(
+    (opp) => opp.status === 'PENDING' || opp.status === 'VIEWED'
+  );
 
   return (
     <div className="space-y-6">
@@ -86,6 +93,36 @@ export const DonorDashboardPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Active Opportunities Alert Banner */}
+      {activeOpportunities.length > 0 && (
+        <Card className="border-crimson-200 bg-gradient-to-r from-crimson-50/90 to-rose-50/70 p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-crimson-600 animate-bounce" />
+                <span className="text-sm font-bold text-crimson-950">
+                  {activeOpportunities.length} Urgent Donation Opportunity Available
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 max-w-xl">
+                A hospital or patient in your area requires {profile.bloodGroup.replace('_', ' ')} blood. Review the details to confirm if you can help.
+              </p>
+            </div>
+
+            <Link to="/dashboard/opportunities">
+              <Button
+                variant="primary"
+                size="sm"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                className="shadow-xs shadow-crimson-600/20"
+              >
+                Review Opportunities
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

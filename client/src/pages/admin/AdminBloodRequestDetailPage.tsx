@@ -1,92 +1,128 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  HeartPulse,
-  Building2,
-  MapPin,
-  Calendar,
-  Phone,
-  User,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  Bell,
-  Plus,
-  ShieldCheck,
-  Send,
-  Droplet,
-} from 'lucide-react';
-import {
-  useBloodRequest,
-  useBloodRequestMatches,
-  useCancelBloodRequest,
-  useNotifyDonorCandidate,
-} from '../../hooks/useBloodRequests.js';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { bloodRequestService } from '../../services/blood-request.service.js';
 import { adminService } from '../../services/admin.service.js';
+import {
+  useBloodRequestOutreach,
+  useCreateOpportunitiesBatch,
+  useCancelOpportunity,
+} from '../../hooks/useOpportunities.js';
 import { DonorMatchCandidate } from '../../types/blood-request.js';
 import {
   BloodGroupBadge,
-  RequestStatusBadge,
   RequestUrgencyBadge,
+  RequestStatusBadge,
+  OpportunityStatusBadge,
   Badge,
 } from '../../components/common/Badge.js';
 import { Button } from '../../components/common/Button.js';
 import { Card } from '../../components/common/Card.js';
 import { Modal } from '../../components/common/Modal.js';
-import { ConfirmDialog } from '../../components/common/ConfirmDialog.js';
 import { Input } from '../../components/common/Input.js';
 import { Select } from '../../components/common/Select.js';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Building2,
+  Phone,
+  User,
+  Plus,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  Sparkles,
+  Users,
+  Eye,
+  HeartHandshake,
+} from 'lucide-react';
 import { formatDate } from '../../lib/utils.js';
 
 export const AdminBloodRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
 
+  // 1. Fetch Blood Request Details
   const {
     data: request,
     isLoading: isReqLoading,
     isError: isReqError,
     error: reqError,
     refetch: refetchRequest,
-  } = useBloodRequest(id);
+  } = useQuery({
+    queryKey: ['blood-request', id],
+    queryFn: () => (id ? bloodRequestService.getBloodRequestById(id) : Promise.reject('No ID')),
+    enabled: Boolean(id),
+  });
 
+  // 2. Fetch Ranked Candidates
   const {
     data: matchData,
     isLoading: isMatchLoading,
-  } = useBloodRequestMatches(id);
+  } = useQuery({
+    queryKey: ['blood-request-matches', id],
+    queryFn: () => (id ? bloodRequestService.getMatches(id) : Promise.reject('No ID')),
+    enabled: Boolean(id),
+  });
 
-  const cancelMutation = useCancelBloodRequest(id!);
-  const notifyMutation = useNotifyDonorCandidate(id!);
+  // 3. Fetch Outreach & Opportunities Data
+  const {
+    data: outreachData,
+    isLoading: isOutreachLoading,
+  } = useBloodRequestOutreach(id);
+
+  // Mutations
+  const cancelMutation = useMutation({
+    mutationFn: () => bloodRequestService.cancelBloodRequest(id!, 'Cancelled by administrator'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blood-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-request', id] });
+    },
+  });
+
+  const notifyMutation = useMutation({
+    mutationFn: (payload: { donorId: string; channel: any; message: string }) =>
+      bloodRequestService.notifyCandidate(id!, payload.donorId, payload.channel, payload.message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blood-request-outreach', id] });
+    },
+  });
+
+  const createBatchMutation = useCreateOpportunitiesBatch(id!);
+  const cancelOpportunityMutation = useCancelOpportunity(id);
 
   const recordDonationMutation = useMutation({
-    mutationFn: ({
-      donorId,
-      location,
-      notes,
-    }: {
-      donorId: string;
-      location: string;
-      notes?: string;
-    }) =>
-      adminService.recordDonation(donorId, {
-        location,
+    mutationFn: (data: { donorId: string; location: string; notes?: string }) =>
+      adminService.recordDonation(data.donorId, {
+        location: data.location,
         bloodRequestId: id,
-        notes,
+        notes: data.notes,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blood-requests'] });
       queryClient.invalidateQueries({ queryKey: ['blood-request', id] });
       queryClient.invalidateQueries({ queryKey: ['blood-request-matches', id] });
+      queryClient.invalidateQueries({ queryKey: ['blood-request-outreach', id] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+      setIsRecordModalOpen(false);
+      setSelectedDonorForDonation(null);
+      setDonationLocation('');
+      setDonationNotes('');
     },
   });
 
-  // Modals state
+  // Modals & Selection state
+  const [activeTab, setActiveTab] = useState<'MATCHES' | 'OUTREACH' | 'DONATIONS'>('OUTREACH');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [oppToCancel, setOppToCancel] = useState<string | null>(null);
+
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  const [batchSuccessMsg, setBatchSuccessMsg] = useState<string | null>(null);
 
   const [selectedCandidate, setSelectedCandidate] = useState<DonorMatchCandidate | null>(null);
   const [notifyChannel, setNotifyChannel] = useState<'IN_APP' | 'SMS' | 'EMAIL'>('IN_APP');
@@ -106,7 +142,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
   if (isReqLoading) {
     return (
       <Card className="p-12 flex justify-center items-center">
-        <LoadingSpinner size="lg" label="Loading blood request and candidate matches..." />
+        <LoadingSpinner size="lg" label="Loading blood request details..." />
       </Card>
     );
   }
@@ -138,10 +174,10 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
     setIsCancelModalOpen(false);
   };
 
-  const handleOpenNotify = (candidate: DonorMatchCandidate) => {
-    setSelectedCandidate(candidate);
+  const handleOpenNotify = (cand: DonorMatchCandidate) => {
+    setSelectedCandidate(cand);
     setNotifyMessage(
-      `Urgent request for ${request.bloodGroup.replace('_', '+')} blood at ${request.hospitalName} (${request.location}). Please contact us if available.`
+      `URGENT: ${request.bloodGroup.replace('_', ' ')} blood donation required at ${request.hospitalName} (${request.location}). Please confirm your availability.`
     );
     setNotifySuccessMsg(null);
   };
@@ -149,41 +185,58 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
   const handleSendNotification = async () => {
     if (!selectedCandidate) return;
     try {
-      const res = await notifyMutation.mutateAsync({
+      await notifyMutation.mutateAsync({
         donorId: selectedCandidate.donorId,
         channel: notifyChannel,
         message: notifyMessage,
       });
-      setNotifySuccessMsg(`Coordination alert recorded via ${res.channel}.`);
-      setTimeout(() => {
-        setSelectedCandidate(null);
-        setNotifySuccessMsg(null);
-      }, 1500);
+      setNotifySuccessMsg('Outreach opportunity successfully dispatched to donor candidate!');
+      setTimeout(() => setSelectedCandidate(null), 1500);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to dispatch notification.');
+      console.error(err);
     }
   };
 
-  const handleOpenRecordDonation = (candidate?: DonorMatchCandidate) => {
-    if (candidate) {
-      setSelectedDonorForDonation({
-        id: candidate.donorId,
-        name: candidate.name,
-        bloodGroup: candidate.bloodGroup,
-      });
-    } else {
-      setSelectedDonorForDonation(null);
+  const handleToggleCandidate = (donorId: string) => {
+    setSelectedCandidateIds((prev) =>
+      prev.includes(donorId) ? prev.filter((id) => id !== donorId) : [...prev, donorId]
+    );
+  };
+
+  const handleSelectTop = (n: number) => {
+    if (!matchData?.candidates) return;
+    const topIds = matchData.candidates.slice(0, n).map((c) => c.donorId);
+    setSelectedCandidateIds(topIds);
+  };
+
+  const handleCreateBatch = async () => {
+    if (selectedCandidateIds.length === 0) return;
+    try {
+      setBatchSuccessMsg(null);
+      const res = await createBatchMutation.mutateAsync(selectedCandidateIds);
+      setBatchSuccessMsg(`Outreach sent! Created ${res.created} new opportunity alerts (${res.skipped} already notified).`);
+      setSelectedCandidateIds([]);
+      setActiveTab('OUTREACH');
+      setTimeout(() => setBatchSuccessMsg(null), 5000);
+    } catch (err: any) {
+      console.error(err);
     }
+  };
+
+  const handleOpenRecordDonation = (donor: { id: string; name: string; bloodGroup: string }) => {
+    setSelectedDonorForDonation(donor);
     setDonationLocation(request.hospitalName || request.location);
-    setDonationNotes(`Fulfilled for Blood Request #${request.id.substring(0, 8)} (${request.bloodGroup.replace('_', '+')})`);
+    setDonationNotes('');
     setRecordError(null);
     setIsRecordModalOpen(true);
   };
 
   const handleRecordDonationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDonorForDonation) {
-      setRecordError('Please select a donor.');
+    if (!selectedDonorForDonation) return;
+
+    if (!donationLocation.trim()) {
+      setRecordError('Donation facility/location is required.');
       return;
     }
 
@@ -191,108 +244,70 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
       setRecordError(null);
       await recordDonationMutation.mutateAsync({
         donorId: selectedDonorForDonation.id,
-        location: donationLocation,
-        notes: donationNotes,
+        location: donationLocation.trim(),
+        notes: donationNotes.trim() || undefined,
       });
-      setIsRecordModalOpen(false);
-      refetchRequest();
     } catch (err: any) {
-      setRecordError(err.response?.data?.message || 'Failed to record donation.');
+      setRecordError(
+        err.response?.data?.message || err.message || 'Failed to record donation.'
+      );
     }
   };
 
+  const stats = outreachData?.stats;
+  const opportunities = outreachData?.opportunities || [];
+
   return (
     <div className="space-y-6">
-      {/* Top Breadcrumb & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link
-            to="/admin/requests"
-            className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors mb-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Requests
-          </Link>
+      {/* Top Bar Navigation */}
+      <div>
+        <Link
+          to="/admin/blood-requests"
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors mb-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Blood Requests
+        </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <HeartPulse className="w-7 h-7 text-crimson-600" />
-              Request #{request.id.substring(0, 8)}
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Blood Request Coordination
             </h1>
             <BloodGroupBadge bloodGroup={request.bloodGroup} />
             <RequestUrgencyBadge urgency={request.urgency} />
             <RequestStatusBadge status={request.status} />
           </div>
-        </div>
 
-        {canModify && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsCancelModalOpen(true)}
-              className="text-red-700 hover:bg-red-50 hover:border-red-200"
-            >
-              <XCircle className="w-4 h-4 mr-1" />
-              Cancel Request
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Medical Disclaimer Banner */}
-      <div className="rounded-xl border border-amber-200/80 bg-amber-50/80 p-4 text-xs text-amber-900 flex items-start gap-3 shadow-2xs">
-        <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-amber-950">Basic Screening Notice: </span>
-          The candidate list below represents potential donor matches based on red-cell compatibility and interval guidelines. Final donor eligibility and crossmatching must be verified at the clinical collection facility.
-        </div>
-      </div>
-
-      {/* Overview Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Clinical & Fulfillment Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Progress Card */}
-          <Card className="p-6">
-            <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center justify-between">
-              <span>Fulfillment Status</span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                {request.unitsFulfilled} of {request.unitsRequired} Units Collected
-              </span>
-            </h2>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-600">Progress</span>
-                <span className={isFulfilled ? 'text-emerald-600' : 'text-crimson-600'}>
-                  {percentage}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    isFulfilled
-                      ? 'bg-emerald-500'
-                      : percentage > 0
-                      ? 'bg-amber-500'
-                      : 'bg-slate-300'
-                  }`}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
+          {canModify && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setIsCancelModalOpen(true)}
+                leftIcon={<XCircle className="w-4 h-4" />}
+              >
+                Cancel Request
+              </Button>
             </div>
+          )}
+        </div>
+      </div>
 
-            {isFulfilled && (
-              <div className="mt-4 p-3 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-medium flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                This blood request has been fully fulfilled and closed.
-              </div>
-            )}
-          </Card>
+      {batchSuccessMsg && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          {batchSuccessMsg}
+        </div>
+      )}
 
-          {/* Details Card */}
+      {/* Main Request Information & Fulfillment Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Details */}
+        <div className="lg:col-span-2 space-y-6">
           <Card className="p-6">
-            <h2 className="text-base font-bold text-slate-900 mb-4">Request Information</h2>
+            <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4">
+              Clinical Request Information
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-xs text-slate-400 block mb-0.5">Hospital / Facility</span>
@@ -353,205 +368,453 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right Col: Coordination Stats */}
+        {/* Right Col: Fulfillment Progress & Screening Stats */}
         <div className="space-y-6">
-          <Card className="p-6">
-            <h2 className="text-base font-bold text-slate-900 mb-4">Screening Summary</h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Recipient Blood Group:</span>
-                <BloodGroupBadge bloodGroup={request.bloodGroup} />
+          <Card className="p-6 space-y-4">
+            <h2 className="text-base font-bold text-slate-900">Fulfillment Progress</h2>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-600">Units Fulfilled</span>
+                <span className="text-slate-900">
+                  {request.unitsFulfilled} of {request.unitsRequired} units ({percentage}%)
+                </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Compatible Groups:</span>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    percentage >= 100
+                      ? 'bg-emerald-500'
+                      : percentage > 0
+                      ? 'bg-amber-500'
+                      : 'bg-slate-300'
+                  }`}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Compatible Blood Groups:</span>
                 <div className="flex gap-1 flex-wrap justify-end">
                   {matchData?.compatibleGroups?.map((bg) => (
                     <BloodGroupBadge key={bg} bloodGroup={bg} />
                   ))}
                 </div>
               </div>
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Eligible Candidates:</span>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Matching Candidates:</span>
                 <span className="font-bold text-slate-900">
-                  {matchData?.totalEligibleCandidates ?? '—'}
+                  {matchData?.totalEligibleCandidates ?? 0}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-500">Created:</span>
-                <span className="text-slate-700">{formatDate(request.createdAt)}</span>
-              </div>
-              {request.createdBy?.email && (
-                <div className="flex justify-between py-2">
-                  <span className="text-slate-500">Coordinator:</span>
-                  <span className="text-slate-700 truncate max-w-[140px]">
-                    {request.createdBy.email}
-                  </span>
-                </div>
-              )}
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Ranked Candidate Donors Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Droplet className="w-5 h-5 text-crimson-600" />
-              Ranked Potential Donor Candidates ({matchData?.candidates?.length ?? 0})
-            </h2>
-            <p className="text-xs text-slate-500">
-              Ranked deterministically by compatibility (40%), eligibility (25%), location (20%), donation history (10%), and recency (5%).
-            </p>
-          </div>
-        </div>
+      {/* Coordination Sub-Tabs */}
+      <div className="border-b border-slate-200 flex items-center gap-4">
+        <button
+          onClick={() => setActiveTab('OUTREACH')}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'OUTREACH'
+              ? 'border-crimson-600 text-crimson-600'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Donor Outreach & Tracking ({opportunities.length})
+        </button>
 
-        {isMatchLoading ? (
-          <Card className="p-8 flex justify-center items-center">
-            <LoadingSpinner size="md" label="Evaluating and ranking candidate donors..." />
-          </Card>
-        ) : !matchData?.candidates || matchData.candidates.length === 0 ? (
-          <Card className="p-8 text-center">
-            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-            <h3 className="text-base font-bold text-slate-900">No active eligible candidates found</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              There are currently no active registered donors with compatible blood groups who meet interval cooldown requirements.
-            </p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {matchData.candidates.map((cand, idx) => (
-              <Card key={cand.donorId} className="p-5 hover:border-slate-300 transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Donor Info & Score */}
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
-                        #{idx + 1}
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-base">{cand.name}</span>
-                          <BloodGroupBadge bloodGroup={cand.bloodGroup} />
-                          <Badge
-                            variant={cand.compatibilityType === 'EXACT' ? 'success' : 'info'}
-                            size="sm"
-                          >
-                            {cand.compatibilityType === 'EXACT' ? 'Exact Match' : 'Compatible Donor'}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {cand.location}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5" />
-                            {cand.contactNumber}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+        <button
+          onClick={() => setActiveTab('MATCHES')}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'MATCHES'
+              ? 'border-crimson-600 text-crimson-600'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          Find Candidate Donors ({matchData?.candidates?.length ?? 0})
+        </button>
 
-                    {/* Match Breakdown Pills */}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-slate-50 text-slate-700 border border-slate-200">
-                        {cand.explanation.compatibilityDetails}
-                      </span>
-                      <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        ✓ {cand.explanation.eligibilityDetails}
-                      </span>
-                      <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-slate-50 text-slate-700 border border-slate-200">
-                        📍 {cand.explanation.locationDetails}
-                      </span>
-                      <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-slate-50 text-slate-700 border border-slate-200">
-                        🩸 {cand.explanation.donationHistory}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Score & Actions */}
-                  <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                    <div className="text-right">
-                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        Match Score
-                      </div>
-                      <div className="text-2xl font-black text-crimson-600">
-                        {cand.matchScore}
-                        <span className="text-xs text-slate-400 font-normal"> / 100</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenNotify(cand)}
-                        className="hover:bg-slate-50"
-                      >
-                        <Bell className="w-3.5 h-3.5 mr-1" />
-                        Contact
-                      </Button>
-
-                      {canModify && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleOpenRecordDonation(cand)}
-                          className="shadow-xs"
-                        >
-                          <Plus className="w-3.5 h-3.5 mr-1" />
-                          Record Donation
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => setActiveTab('DONATIONS')}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'DONATIONS'
+              ? 'border-crimson-600 text-crimson-600'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <HeartHandshake className="w-4 h-4" />
+          Linked Donations ({request.donations?.length ?? 0})
+        </button>
       </div>
 
-      {/* Linked Donations History */}
-      {request.donations && request.donations.length > 0 && (
-        <div className="space-y-4 pt-4">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Linked Donations for this Request ({request.donations.length})
-          </h2>
-          <Card className="overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
-                <tr>
-                  <th className="py-3 px-4">Donor Name</th>
-                  <th className="py-3 px-4">Blood Group</th>
-                  <th className="py-3 px-4">Donation Date</th>
-                  <th className="py-3 px-4">Collection Facility</th>
-                  <th className="py-3 px-4">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {request.donations.map((don) => (
-                  <tr key={don.id} className="hover:bg-slate-50/80">
-                    <td className="py-3 px-4 font-medium text-slate-900">
-                      {don.donor.fullName}
-                    </td>
-                    <td className="py-3 px-4">
-                      <BloodGroupBadge bloodGroup={don.donor.bloodGroup} />
-                    </td>
-                    <td className="py-3 px-4 text-xs text-slate-600">
-                      {formatDate(don.donatedAt)}
-                    </td>
-                    <td className="py-3 px-4 text-slate-700">{don.location}</td>
-                    <td className="py-3 px-4 text-xs text-slate-500 italic">
-                      {don.notes || '—'}
-                    </td>
+      {/* TAB 1: OUTREACH & OPPORTUNITY TRACKING */}
+      {activeTab === 'OUTREACH' && (
+        <div className="space-y-6">
+          {/* Outreach Stats Banner */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-slate-400 font-bold uppercase block">Outreach Sent</span>
+              <span className="text-xl font-bold text-slate-900">{stats?.totalOpportunities ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-blue-600 font-bold uppercase block">Pending</span>
+              <span className="text-xl font-bold text-blue-600">{stats?.pending ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-amber-600 font-bold uppercase block">Viewed</span>
+              <span className="text-xl font-bold text-amber-600">{stats?.viewed ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-emerald-600 font-bold uppercase block">Accepted</span>
+              <span className="text-xl font-bold text-emerald-600">{stats?.accepted ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-slate-500 font-bold uppercase block">Declined</span>
+              <span className="text-xl font-bold text-slate-600">{stats?.declined ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-red-500 font-bold uppercase block">Expired</span>
+              <span className="text-xl font-bold text-red-600">{stats?.expired ?? 0}</span>
+            </Card>
+            <Card className="p-3 text-center">
+              <span className="text-2xs text-emerald-700 font-bold uppercase block">Fulfilled</span>
+              <span className="text-xl font-bold text-emerald-700">{stats?.fulfilled ?? 0}</span>
+            </Card>
+          </div>
+
+          {/* Opportunities Table */}
+          {isOutreachLoading ? (
+            <Card className="p-8 flex justify-center items-center">
+              <LoadingSpinner size="md" label="Loading outreach records..." />
+            </Card>
+          ) : opportunities.length === 0 ? (
+            <Card className="p-8 text-center space-y-3">
+              <Users className="w-10 h-10 text-slate-400 mx-auto" />
+              <h3 className="text-base font-bold text-slate-900">No donor outreach dispatched yet</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Switch to the "Find Candidate Donors" tab to select compatible candidates and create opportunity alerts.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setActiveTab('MATCHES')}
+              >
+                Find & Outreach Candidates
+              </Button>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
+                  <tr>
+                    <th className="py-3 px-4">Donor Name</th>
+                    <th className="py-3 px-4">Blood Group</th>
+                    <th className="py-3 px-4">Contact</th>
+                    <th className="py-3 px-4">Match Score</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Responses & Details</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {opportunities.map((opp) => (
+                    <tr key={opp.id} className="hover:bg-slate-50/80">
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        {opp.donor.fullName}
+                      </td>
+                      <td className="py-3 px-4">
+                        <BloodGroupBadge bloodGroup={opp.donor.bloodGroup} />
+                      </td>
+                      <td className="py-3 px-4 text-xs text-slate-600">
+                        {opp.donor.contactNumber}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-crimson-600">
+                        {opp.matchScore}%
+                      </td>
+                      <td className="py-3 px-4">
+                        <OpportunityStatusBadge status={opp.status} />
+                      </td>
+                      <td className="py-3 px-4 text-xs text-slate-500">
+                        {opp.status === 'ACCEPTED' && (
+                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Accepted ({formatDate(opp.respondedAt)})
+                          </span>
+                        )}
+                        {opp.status === 'DECLINED' && (
+                          <span className="text-slate-600">
+                            Reason: {opp.declineReason} {opp.declineNotes ? `("${opp.declineNotes}")` : ''}
+                          </span>
+                        )}
+                        {opp.status === 'VIEWED' && (
+                          <span className="text-amber-700 flex items-center gap-1">
+                            <Eye className="w-3.5 h-3.5" />
+                            Viewed by donor
+                          </span>
+                        )}
+                        {opp.status === 'PENDING' && (
+                          <span className="text-slate-400">Waiting for donor response</span>
+                        )}
+                        {opp.status === 'FULFILLED' && (
+                          <span className="text-emerald-600 font-bold">Donation Collected</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right space-x-2">
+                        {opp.status === 'ACCEPTED' && canModify && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() =>
+                              handleOpenRecordDonation({
+                                id: opp.donorId,
+                                name: opp.donor.fullName,
+                                bloodGroup: opp.donor.bloodGroup,
+                              })
+                            }
+                          >
+                            Record Donation
+                          </Button>
+                        )}
+                        {(opp.status === 'PENDING' || opp.status === 'VIEWED') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOppToCancel(opp.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Cancel Alert
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: CANDIDATE MATCHING & BATCH OUTREACH */}
+      {activeTab === 'MATCHES' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 text-white p-4 rounded-xl shadow-xs">
+            <div>
+              <h3 className="text-sm font-bold">Batch Donor Outreach</h3>
+              <p className="text-xs text-slate-300">
+                Select candidates to create opportunity alerts (Max 10 per batch).
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectTop(1)}
+                className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
+              >
+                Select Top 1
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectTop(5)}
+                className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
+              >
+                Select Top 5
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectTop(10)}
+                className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
+              >
+                Select Top 10
+              </Button>
+
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={selectedCandidateIds.length === 0}
+                onClick={handleCreateBatch}
+                isLoading={createBatchMutation.isPending}
+                leftIcon={<Send className="w-3.5 h-3.5" />}
+              >
+                Send Opportunities ({selectedCandidateIds.length})
+              </Button>
+            </div>
+          </div>
+
+          {isMatchLoading ? (
+            <Card className="p-8 flex justify-center items-center">
+              <LoadingSpinner size="md" label="Evaluating candidate donors..." />
+            </Card>
+          ) : !matchData?.candidates || matchData.candidates.length === 0 ? (
+            <Card className="p-8 text-center">
+              <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+              <h3 className="text-base font-bold text-slate-900">No matching candidates found</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                No active donors match the required blood group and interval cooldown rules.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {matchData.candidates.map((cand, idx) => {
+                const isSelected = selectedCandidateIds.includes(cand.donorId);
+                return (
+                  <Card
+                    key={cand.donorId}
+                    className={`p-5 transition-all ${
+                      isSelected ? 'border-crimson-500 ring-2 ring-crimson-500/20 bg-crimson-50/20' : 'hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      {/* Checkbox & Donor Info */}
+                      <div className="flex items-start gap-3 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleCandidate(cand.donorId)}
+                          className="mt-1.5 h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500 cursor-pointer"
+                        />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
+                              #{idx + 1}
+                            </span>
+                            <span className="font-bold text-slate-900 text-base">{cand.name}</span>
+                            <BloodGroupBadge bloodGroup={cand.bloodGroup} />
+                            <Badge
+                              variant={cand.compatibilityType === 'EXACT' ? 'success' : 'info'}
+                              size="sm"
+                            >
+                              {cand.compatibilityType === 'EXACT' ? 'Exact Match' : 'Compatible'}
+                            </Badge>
+                          </div>
+
+                          <div className="text-xs text-slate-500 flex items-center gap-3">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {cand.location}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3.5 h-3.5" />
+                              {cand.contactNumber}
+                            </span>
+                          </div>
+
+                          {/* Pills */}
+                          <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              {cand.explanation.compatibilityDetails}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800">
+                              ✓ {cand.explanation.eligibilityDetails}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              📍 {cand.explanation.locationDetails}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score & Actions */}
+                      <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2">
+                        <div className="text-right">
+                          <span className="text-2xs font-semibold text-slate-400 uppercase tracking-wider block">
+                            Match Score
+                          </span>
+                          <span className="text-2xl font-black text-crimson-600">
+                            {cand.matchScore}
+                            <span className="text-xs text-slate-400 font-normal"> / 100</span>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenNotify(cand)}
+                          >
+                            Single Outreach
+                          </Button>
+                          {canModify && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() =>
+                                handleOpenRecordDonation({
+                                  id: cand.donorId,
+                                  name: cand.name,
+                                  bloodGroup: cand.bloodGroup,
+                                })
+                              }
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" />
+                              Record
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: LINKED DONATIONS */}
+      {activeTab === 'DONATIONS' && (
+        <div className="space-y-4">
+          {!request.donations || request.donations.length === 0 ? (
+            <Card className="p-8 text-center space-y-2">
+              <HeartHandshake className="w-8 h-8 text-slate-400 mx-auto" />
+              <h3 className="text-base font-bold text-slate-900">No donations recorded yet</h3>
+              <p className="text-xs text-slate-500">
+                When an accepted donor completes their collection procedure, record the donation to update fulfillment.
+              </p>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
+                  <tr>
+                    <th className="py-3 px-4">Donor Name</th>
+                    <th className="py-3 px-4">Blood Group</th>
+                    <th className="py-3 px-4">Donation Date</th>
+                    <th className="py-3 px-4">Collection Facility</th>
+                    <th className="py-3 px-4">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {request.donations.map((don: any) => (
+                    <tr key={don.id} className="hover:bg-slate-50/80">
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        {don.donor.fullName}
+                      </td>
+                      <td className="py-3 px-4">
+                        <BloodGroupBadge bloodGroup={don.donor.bloodGroup} />
+                      </td>
+                      <td className="py-3 px-4 text-xs text-slate-600">
+                        {formatDate(don.donatedAt)}
+                      </td>
+                      <td className="py-3 px-4 text-slate-700">{don.location}</td>
+                      <td className="py-3 px-4 text-xs text-slate-500 italic">
+                        {don.notes || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
         </div>
       )}
 
@@ -560,7 +823,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
         isOpen={!!selectedCandidate}
         onClose={() => setSelectedCandidate(null)}
         title={`Contact Candidate: ${selectedCandidate?.name}`}
-        description="Dispatch a coordination alert to this potential donor."
+        description="Dispatch an outreach opportunity alert to this candidate."
       >
         <div className="space-y-4">
           {notifySuccessMsg && (
@@ -605,7 +868,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
               isLoading={notifyMutation.isPending}
             >
               <Send className="w-4 h-4 mr-1.5" />
-              Send Alert
+              Send Outreach
             </Button>
           </div>
         </div>
@@ -671,6 +934,23 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Cancel Opportunity Dialog */}
+      <ConfirmDialog
+        isOpen={!!oppToCancel}
+        onClose={() => setOppToCancel(null)}
+        onConfirm={async () => {
+          if (oppToCancel) {
+            await cancelOpportunityMutation.mutateAsync({ id: oppToCancel });
+            setOppToCancel(null);
+          }
+        }}
+        title="Cancel Opportunity Alert"
+        message="Are you sure you want to cancel this opportunity alert? The donor will no longer be able to accept it."
+        confirmLabel="Cancel Alert"
+        variant="danger"
+        isLoading={cancelOpportunityMutation.isPending}
+      />
 
       {/* Cancel Request Dialog */}
       <ConfirmDialog

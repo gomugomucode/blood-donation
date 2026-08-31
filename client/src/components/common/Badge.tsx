@@ -2,7 +2,8 @@ import React from 'react';
 import { cn, formatBloodGroup } from '../../lib/utils.js';
 import { BloodGroup } from '../../types/index.js';
 import { RequestStatus, RequestUrgency } from '../../types/blood-request.js';
-import { AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { OpportunityStatus } from '../../types/opportunity.js';
+import { AlertCircle, Clock, CheckCircle2, XCircle, Eye, Check } from 'lucide-react';
 
 export interface BadgeProps {
   variant?: 'neutral' | 'success' | 'warning' | 'danger' | 'crimson' | 'info';
@@ -171,6 +172,65 @@ export const RequestStatusBadge: React.FC<{ status: RequestStatus; className?: s
         <Badge variant="danger" className={className}>
           <Clock className="w-3 h-3 mr-0.5" />
           Expired
+        </Badge>
+      );
+    default:
+      return <Badge className={className}>{status}</Badge>;
+  }
+};
+
+export const OpportunityStatusBadge: React.FC<{ status: OpportunityStatus; className?: string }> = ({
+  status,
+  className,
+}) => {
+  switch (status) {
+    case 'PENDING':
+      return (
+        <Badge variant="info" className={className}>
+          <Clock className="w-3 h-3 mr-0.5" />
+          Pending
+        </Badge>
+      );
+    case 'VIEWED':
+      return (
+        <Badge variant="warning" className={className}>
+          <Eye className="w-3 h-3 mr-0.5" />
+          Viewed
+        </Badge>
+      );
+    case 'ACCEPTED':
+      return (
+        <Badge variant="success" className={className}>
+          <Check className="w-3 h-3 mr-0.5" />
+          Accepted
+        </Badge>
+      );
+    case 'DECLINED':
+      return (
+        <Badge variant="neutral" className={className}>
+          <XCircle className="w-3 h-3 mr-0.5" />
+          Declined
+        </Badge>
+      );
+    case 'EXPIRED':
+      return (
+        <Badge variant="danger" className={className}>
+          <Clock className="w-3 h-3 mr-0.5" />
+          Expired
+        </Badge>
+      );
+    case 'CANCELLED':
+      return (
+        <Badge variant="neutral" className={className}>
+          <XCircle className="w-3 h-3 mr-0.5" />
+          Cancelled
+        </Badge>
+      );
+    case 'FULFILLED':
+      return (
+        <Badge variant="success" className={className}>
+          <CheckCircle2 className="w-3 h-3 mr-0.5" />
+          Fulfilled
         </Badge>
       );
     default:
