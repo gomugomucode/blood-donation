@@ -360,6 +360,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       const oppA = await prisma.donorOpportunity.findFirst({
         where: { donorId: donorAProfile.id, bloodRequestId: testBloodRequest.id },
       });
+      expect(oppA).toBeDefined();
 
       // Admin records donation linked to blood request
       const donationRes = await request(app)
@@ -375,7 +376,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
 
       // Verify opportunity status transitioned to FULFILLED
       const updatedOpp = await prisma.donorOpportunity.findUnique({
-        where: { id: oppA.id },
+        where: { id: oppA!.id },
       });
       expect(updatedOpp?.status).toBe('FULFILLED');
     });
