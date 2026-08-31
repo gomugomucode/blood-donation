@@ -1,0 +1,70 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  DONOR
+  ADMIN
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(DONOR)
+  donorProfile DonorProfile?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([email])
+}
+
+model DonorProfile {
+  id             String      @id @default(uuid())
+  userId         String      @unique
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String
+  dateOfBirth    DateTime
+  address        String
+  contactNumber  String
+  bloodGroup     BloodGroup
+  lastDonationAt DateTime?
+  preferences    Json?       @default("{}")
+  deletedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  donations      Donation[]
+
+  @@index([bloodGroup])
+  @@index([contactNumber])
+  @@index([deletedAt])
+}
+
+model Donation {
+  id             String       @id @default(uuid())
+  donorId        String
+  donor          DonorProfile @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  donatedAt      DateTime     @default(now())
+  location       String
+  notes          String?
+  createdAt      DateTime     @default(now())
+
+  @@index([donorId])
+  @@index([donatedAt])
+}
