@@ -6,6 +6,8 @@ import {
   Donation,
   DashboardMetrics,
   DonorFilters,
+  NotificationStatus,
+  NotificationChannel,
 } from '../types/index.js';
 
 export interface AdminUpdateDonorPayload {
@@ -41,6 +43,60 @@ export interface AuditLogFilters {
   limit?: number;
   action?: string;
   targetType?: string;
+}
+
+export interface SystemStatusData {
+  environment: string;
+  uptimeSeconds: number;
+  timestamp: string;
+  components: {
+    database: {
+      status: 'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE';
+      latencyMs: number;
+    };
+    notificationWorker: {
+      status: 'HEALTHY' | 'IDLE';
+      pollIntervalMs: number;
+    };
+    emailProvider: {
+      provider: string;
+      status: string;
+      fromEmail: string;
+    };
+    smsProvider: {
+      provider: string;
+      status: string;
+    };
+  };
+  queueMetrics: {
+    pending: number;
+    failed: number;
+    sent: number;
+  };
+}
+
+export interface OperationalNotification {
+  id: string;
+  userId: string;
+  channel: NotificationChannel;
+  status: NotificationStatus;
+  title: string;
+  message: string;
+  attemptCount: number;
+  lastAttemptAt?: string | null;
+  failedAt?: string | null;
+  errorCode?: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    donorProfile?: {
+      fullName: string;
+      bloodGroup: string;
+      contactNumber: string;
+    } | null;
+  };
 }
 
 export const adminService = {
@@ -94,6 +150,27 @@ export const adminService = {
     if (filters.targetType) params.append('targetType', filters.targetType);
 
     const res = await api.get<ApiResponse<PaginatedResult<AuditLog>>>(`/admin/audit-logs?${params.toString()}`);
+    return res.data.data!;
+  },
+
+  async getSystemStatus(): Promise<SystemStatusData> {
+    const res = await api.get<ApiResponse<SystemStatusData>>('/admin/operations/system-status');
+    return res.data.data!;
+  },
+
+  async getOperationalNotifications(filters: { page?: number; limit?: number; status?: string; channel?: string } = {}): Promise<PaginatedResult<OperationalNotification>> {
+    const params = new URLSearchParams();
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.status) params.append('status', filters.status);
+    if (filters.channel) params.append('channel', filters.channel);
+
+    const res = await api.get<ApiResponse<PaginatedResult<OperationalNotification>>>(`/admin/operations/notifications?${params.toString()}`);
+    return res.data.data!;
+  },
+
+  async retryOperationalNotification(id: string): Promise<any> {
+    const res = await api.post<ApiResponse<any>>(`/admin/operations/notifications/${id}/retry`);
     return res.data.data!;
   },
 };

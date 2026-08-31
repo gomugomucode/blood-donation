@@ -7,6 +7,7 @@ import {
   HeartHandshake,
   ShieldAlert,
   PlusCircle,
+  Activity,
 } from 'lucide-react';
 import { cn } from '../../lib/utils.js';
 
@@ -33,6 +34,12 @@ export const AdminSidebar: React.FC = () => {
   ];
 
   const systemNav = [
+    {
+      to: '/admin/operations',
+      end: false,
+      label: 'Operations & Health',
+      icon: Activity,
+    },
     {
       to: '/admin/audit-logs',
       end: false,

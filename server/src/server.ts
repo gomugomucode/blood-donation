@@ -2,12 +2,18 @@ import { app } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { notificationWorker } from './workers/notification.worker.js';
 
 const startServer = async () => {
   try {
-    // Verify database connection on startup
+    // 1. Verify database connection on startup
     await prisma.$connect();
     logger.info('Connected to PostgreSQL database successfully');
+
+    // 2. Start asynchronous notification worker (non-test environments)
+    if (env.NODE_ENV !== 'test') {
+      notificationWorker.start();
+    }
 
     const server = app.listen(Number(env.PORT), '0.0.0.0', () => {
       logger.info(`HemaCare Blood Donation API running at http://localhost:${env.PORT}`, {
@@ -18,7 +24,11 @@ const startServer = async () => {
     });
 
     const shutdown = async (signal: string) => {
-      logger.info(`Received ${signal}. Gracefully shutting down HTTP server...`);
+      logger.info(`Received ${signal}. Gracefully shutting down HTTP server & worker...`);
+
+      // Stop background worker polling
+      notificationWorker.stop();
+
       server.close(async () => {
         try {
           await prisma.$disconnect();

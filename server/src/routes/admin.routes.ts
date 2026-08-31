@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { adminController } from '../controllers/admin.controller.js';
 import { opportunityController } from '../controllers/opportunity.controller.js';
+import { adminOperationsController } from '../controllers/admin-operations.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery, validateParams } from '../middleware/validate.middleware.js';
 import {
@@ -63,6 +64,11 @@ router.get(
   validateQuery(auditLogQuerySchema),
   adminController.getAuditLogs
 );
+
+// Operations, Telemetry & Failed Notification Controls (Phase 14)
+router.get('/operations/system-status', adminOperationsController.getSystemStatus);
+router.get('/operations/notifications', adminOperationsController.getNotifications);
+router.post('/operations/notifications/:id/retry', adminOperationsController.retryNotification);
 
 // Opportunities management
 router.post(
