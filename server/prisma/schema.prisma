@@ -137,8 +137,11 @@ model BloodRequest {
   requiredBy       DateTime
   patientReference String?
   hospitalName     String
+  contactName      String?
+  contactNumber    String?
   status           RequestStatus      @default(OPEN)
   notes            String?
+  closedAt         DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   donations        Donation[]
