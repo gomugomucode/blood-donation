@@ -35,7 +35,8 @@ export class AdminController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const donor = await adminService.getDonorById(req.params.id);
+      const donorId = req.params.id as string;
+      const donor = await adminService.getDonorById(donorId);
       sendSuccess(res, donor);
     } catch (error) {
       next(error);
@@ -48,7 +49,8 @@ export class AdminController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const updated = await adminService.updateDonor(req.params.id, req.body);
+      const donorId = req.params.id as string;
+      const updated = await adminService.updateDonor(donorId, req.body);
       sendSuccess(res, updated, 'Donor record updated successfully');
     } catch (error) {
       next(error);
@@ -61,7 +63,8 @@ export class AdminController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const result = await adminService.deactivateDonor(req.params.id);
+      const donorId = req.params.id as string;
+      const result = await adminService.deactivateDonor(donorId);
       sendSuccess(res, result, 'Donor record deactivated successfully');
     } catch (error) {
       next(error);
@@ -74,7 +77,8 @@ export class AdminController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const donations = await adminService.getDonorDonations(req.params.id);
+      const donorId = req.params.id as string;
+      const donations = await adminService.getDonorDonations(donorId);
       sendSuccess(res, donations);
     } catch (error) {
       next(error);
@@ -87,7 +91,8 @@ export class AdminController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const donation = await adminService.recordDonation(req.params.id, req.body);
+      const donorId = req.params.id as string;
+      const donation = await adminService.recordDonation(donorId, req.body);
       sendSuccess(res, donation, 'Donation recorded successfully', 201);
     } catch (error) {
       next(error);
