@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { BloodGroup, DonorFilters as DonorFiltersType } from '../../types/index.js';
 import { bloodGroups } from '../../schemas/auth.schema.js';
 import { formatBloodGroup } from '../../lib/utils.js';

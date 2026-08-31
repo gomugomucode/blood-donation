@@ -7,7 +7,6 @@ import { ErrorState } from '../common/ErrorState.js';
 import { BloodGroupBadge, EligibilityBadge } from '../common/Badge.js';
 import { formatDate, calculateAge } from '../../lib/utils.js';
 import { Calendar, Phone, MapPin, Mail, Droplet, Clock, ShieldCheck } from 'lucide-react';
-import { DonorProfile } from '../../types/index.js';
 
 export interface DonorDetailModalProps {
   isOpen: boolean;
@@ -125,7 +124,7 @@ export const DonorDetailModal: React.FC<DonorDetailModalProps> = ({
 
             {donor.donations && donor.donations.length > 0 ? (
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                {donor.donations.map((donation, idx) => (
+                {donor.donations.map((donation) => (
                   <div key={donation.id} className="p-3 text-xs flex items-start justify-between bg-white hover:bg-slate-50">
                     <div>
                       <p className="font-semibold text-slate-900 flex items-center gap-1.5">
