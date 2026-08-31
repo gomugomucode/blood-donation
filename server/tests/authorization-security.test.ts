@@ -153,6 +153,10 @@ describe('Security & Authorization / RBAC Enforcement', () => {
         role: 'ADMIN', // Attacker trying privilege escalation
       };
 
+      await prisma.user.deleteMany({
+        where: { email: maliciousPayload.email },
+      });
+
       const res = await request(app).post('/api/v1/auth/register').send(maliciousPayload);
 
       expect(res.status).toBe(201);
