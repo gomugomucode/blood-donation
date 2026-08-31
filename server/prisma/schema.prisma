@@ -38,6 +38,42 @@ enum RequestUrgency {
   CRITICAL
 }
 
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum NotificationType {
+  OPPORTUNITY_ALERT
+  STATUS_UPDATE
+  GENERAL
+}
+
+enum OpportunityStatus {
+  PENDING
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+  FULFILLED
+}
+
+enum DeclineReason {
+  NOT_AVAILABLE
+  CANNOT_TRAVEL
+  RECENTLY_DONATED
+  OTHER
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -45,6 +81,7 @@ model User {
   role          Role           @default(DONOR)
   donorProfile  DonorProfile?
   bloodRequests BloodRequest[]
+  notifications Notification[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -52,20 +89,21 @@ model User {
 }
 
 model DonorProfile {
-  id             String      @id @default(uuid())
-  userId         String      @unique
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String             @id @default(uuid())
+  userId         String             @unique
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   fullName       String
   dateOfBirth    DateTime
   address        String
   contactNumber  String
   bloodGroup     BloodGroup
   lastDonationAt DateTime?
-  preferences    Json?       @default("{}")
+  preferences    Json?              @default("{}")
   deletedAt      DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   donations      Donation[]
+  opportunities  DonorOpportunity[]
 
   @@index([bloodGroup])
   @@index([contactNumber])
@@ -73,13 +111,13 @@ model DonorProfile {
 }
 
 model BloodRequest {
-  id               String         @id @default(uuid())
+  id               String             @id @default(uuid())
   createdById      String
-  createdBy        User           @relation(fields: [createdById], references: [id])
+  createdBy        User               @relation(fields: [createdById], references: [id])
   bloodGroup       BloodGroup
   unitsRequired    Int
-  unitsFulfilled   Int            @default(0)
-  urgency          RequestUrgency @default(NORMAL)
+  unitsFulfilled   Int                @default(0)
+  urgency          RequestUrgency     @default(NORMAL)
   location         String
   requiredBy       DateTime
   patientReference String?
@@ -87,16 +125,61 @@ model BloodRequest {
   contactName      String
   contactNumber    String
   notes            String?
-  status           RequestStatus  @default(OPEN)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  status           RequestStatus      @default(OPEN)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   closedAt         DateTime?
   donations        Donation[]
+  opportunities    DonorOpportunity[]
 
   @@index([status])
   @@index([bloodGroup])
   @@index([urgency])
   @@index([requiredBy])
+  @@index([createdAt])
+}
+
+model DonorOpportunity {
+  id             String            @id @default(uuid())
+  donorId        String
+  donor          DonorProfile      @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  bloodRequestId String
+  bloodRequest   BloodRequest      @relation(fields: [bloodRequestId], references: [id], onDelete: Cascade)
+  matchScore     Int
+  matchReason    String
+  status         OpportunityStatus @default(PENDING)
+  declineReason  DeclineReason?
+  declineNotes   String?
+  expiresAt      DateTime
+  viewedAt       DateTime?
+  respondedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  notifications  Notification[]
+
+  @@index([donorId, status])
+  @@index([bloodRequestId, status])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
+model Notification {
+  id            String              @id @default(uuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunityId String?
+  opportunity   DonorOpportunity?   @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  channel       NotificationChannel @default(IN_APP)
+  type          NotificationType    @default(OPPORTUNITY_ALERT)
+  status        NotificationStatus  @default(PENDING)
+  title         String
+  message       String
+  sentAt        DateTime?
+  readAt        DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([userId, status])
+  @@index([opportunityId])
   @@index([createdAt])
 }
 
