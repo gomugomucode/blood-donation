@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Calendar, Phone, MapPin, Mail, Lock, AlertCircle, HeartHandshake } from 'lucide-react';
+import { User, Calendar, Phone, MapPin, Mail, Lock, AlertCircle, HeartHandshake, ShieldCheck } from 'lucide-react';
 import { registerSchema, RegisterFormValues, bloodGroups } from '../../schemas/auth.schema.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../common/Button.js';
@@ -54,12 +54,20 @@ export const RegistrationForm: React.FC = () => {
       {serverError && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 p-3.5 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg animate-in fade-in"
+          className="flex items-start gap-2.5 p-3.5 text-xs text-red-800 bg-red-50 border border-red-200 rounded-xl animate-fade-in"
         >
           <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-          <span>{serverError}</span>
+          <span className="font-medium">{serverError}</span>
         </div>
       )}
+
+      {/* Medical screening notice banner */}
+      <div className="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl flex items-start gap-2.5 text-2xs text-rose-900 leading-relaxed">
+        <ShieldCheck className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+        <span>
+          <strong>Eligibility Notice:</strong> Donors must be at least 17 years old. Registering adds you to the voluntary donor registry. Physical screening occurs on-site before every donation.
+        </span>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
@@ -67,16 +75,16 @@ export const RegistrationForm: React.FC = () => {
           type="text"
           placeholder="e.g. Jane Doe"
           required
-          leftIcon={<User className="w-4 h-4" />}
+          leftIcon={<User className="w-4 h-4 text-slate-400" />}
           error={errors.fullName?.message}
           {...register('fullName')}
         />
 
         <Input
-          label="Date of Birth"
+          label="Date of Birth (Min 17 Years)"
           type="date"
           required
-          leftIcon={<Calendar className="w-4 h-4" />}
+          leftIcon={<Calendar className="w-4 h-4 text-slate-400" />}
           error={errors.dateOfBirth?.message}
           {...register('dateOfBirth')}
         />
@@ -94,20 +102,20 @@ export const RegistrationForm: React.FC = () => {
         <Input
           label="Contact Phone Number"
           type="tel"
-          placeholder="+1-555-0199"
+          placeholder="+977-9800000000"
           required
-          leftIcon={<Phone className="w-4 h-4" />}
+          leftIcon={<Phone className="w-4 h-4 text-slate-400" />}
           error={errors.contactNumber?.message}
           {...register('contactNumber')}
         />
       </div>
 
       <Input
-        label="Residential Address"
+        label="Residential City / Region Address"
         type="text"
-        placeholder="Street address, City, State/Province"
+        placeholder="e.g. Central Butwal, Rupandehi"
         required
-        leftIcon={<MapPin className="w-4 h-4" />}
+        leftIcon={<MapPin className="w-4 h-4 text-slate-400" />}
         error={errors.address?.message}
         {...register('address')}
       />
@@ -115,10 +123,10 @@ export const RegistrationForm: React.FC = () => {
       <Input
         label="Email Address"
         type="email"
-        placeholder="jane.doe@example.com"
+        placeholder="e.g. jane.doe@example.org"
         autoComplete="email"
         required
-        leftIcon={<Mail className="w-4 h-4" />}
+        leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
         error={errors.email?.message}
         {...register('email')}
       />
@@ -127,10 +135,10 @@ export const RegistrationForm: React.FC = () => {
         <Input
           label="Create Password"
           type="password"
-          placeholder="Minimum 8 characters"
+          placeholder="Min 8 characters (Upper, Lower, Number)"
           autoComplete="new-password"
           required
-          leftIcon={<Lock className="w-4 h-4" />}
+          leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
           error={errors.password?.message}
           {...register('password')}
         />
@@ -141,7 +149,7 @@ export const RegistrationForm: React.FC = () => {
           placeholder="Re-enter password"
           autoComplete="new-password"
           required
-          leftIcon={<Lock className="w-4 h-4" />}
+          leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
@@ -150,18 +158,19 @@ export const RegistrationForm: React.FC = () => {
       <div className="pt-2">
         <Button
           type="submit"
+          variant="critical"
           className="w-full"
           size="lg"
           isLoading={isSubmitting}
           leftIcon={<HeartHandshake className="w-5 h-5" />}
         >
-          Create Donor Account
+          Complete Registration & Join Registry
         </Button>
       </div>
 
       <p className="text-center text-xs text-slate-500 pt-2">
         Already registered as a blood donor?{' '}
-        <Link to="/login" className="font-semibold text-crimson-600 hover:text-crimson-700 underline">
+        <Link to="/login" className="font-bold text-rose-600 hover:text-rose-700 underline">
           Sign In
         </Link>
       </p>

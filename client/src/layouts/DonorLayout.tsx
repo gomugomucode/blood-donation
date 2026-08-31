@@ -7,15 +7,13 @@ import {
   User,
   History,
   LogOut,
-  Menu,
-  X,
   Bell,
   Sparkles,
   CheckCheck,
   ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { BloodGroupBadge } from '../components/common/Badge.js';
-import { Button } from '../components/common/Button.js';
 import { cn } from '../lib/utils.js';
 import {
   useDonorNotifications,
@@ -27,22 +25,26 @@ import {
 export const DonorLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const { data: unreadData } = useUnreadNotificationCount();
-  const { data: notifData } = useDonorNotifications({ limit: 5 });
+  const { data: notifData } = useDonorNotifications({ limit: 6 });
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 
   const unreadCount = unreadData?.unreadCount ?? 0;
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setNotifDropdownOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -52,8 +54,8 @@ export const DonorLayout: React.FC = () => {
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/dashboard/opportunities', label: 'Opportunities', icon: Sparkles, end: false },
-    { to: '/profile', label: 'My Profile', icon: User, end: false },
     { to: '/history', label: 'Donation History', icon: History, end: false },
+    { to: '/profile', label: 'Donor Profile', icon: User, end: false },
   ];
 
   const handleNotificationClick = async (notif: any) => {
@@ -69,23 +71,25 @@ export const DonorLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-16 md:pb-0">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-2xs">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-crimson-600 flex items-center justify-center text-white shadow-xs">
+          <div className="flex items-center gap-8">
+            <Link to="/dashboard" className="flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-600/20 transition-transform group-hover:scale-105">
                 <HeartHandshake className="w-5 h-5" />
               </div>
               <div>
-                <span className="font-extrabold text-slate-900 text-base tracking-tight">HemaCare</span>
-                <span className="text-2xs text-slate-500 font-semibold block -mt-1">Donor Portal</span>
+                <span className="font-extrabold text-slate-900 text-base tracking-tight block">HemaCare</span>
+                <span className="text-[10px] text-rose-600 font-bold block -mt-1 tracking-wider uppercase">
+                  Donor Portal
+                </span>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1 ml-4">
+            <nav className="hidden md:flex items-center gap-1.5">
               {navLinks.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -95,10 +99,10 @@ export const DonorLayout: React.FC = () => {
                     end={item.end}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors',
+                        'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150',
                         isActive
-                          ? 'bg-crimson-50 text-crimson-700 font-bold border border-crimson-100'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-rose-50 text-rose-700 font-bold border border-rose-200 shadow-2xs'
+                          : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
                       )
                     }
                   >
@@ -112,23 +116,24 @@ export const DonorLayout: React.FC = () => {
 
           <div className="flex items-center gap-3">
             {/* Notification Bell with Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
-                className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                aria-label="View notifications"
+                className="relative p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="View donation notifications"
+                aria-expanded={notifDropdownOpen}
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-crimson-600 text-white text-2xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute top-2 right-2 w-4 h-4 bg-rose-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-sm animate-pulse-subtle">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
 
               {notifDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-xl py-3 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-elevated py-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 pb-2.5 border-b border-slate-100 flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
                       <p className="text-2xs text-slate-500">
@@ -138,7 +143,7 @@ export const DonorLayout: React.FC = () => {
                     {unreadCount > 0 && (
                       <button
                         onClick={() => markAllReadMutation.mutate()}
-                        className="text-2xs font-semibold text-crimson-600 hover:text-crimson-700 flex items-center gap-1 cursor-pointer"
+                        className="text-2xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
                         Mark all as read
@@ -157,18 +162,18 @@ export const DonorLayout: React.FC = () => {
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
                           className={cn(
-                            'p-3 hover:bg-slate-50 transition-colors cursor-pointer text-left',
-                            notif.status !== 'READ' ? 'bg-crimson-50/30' : ''
+                            'p-3.5 hover:bg-slate-50 transition-colors cursor-pointer text-left',
+                            notif.status !== 'READ' ? 'bg-rose-50/40' : ''
                           )}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                               {notif.status !== 'READ' && (
-                                <span className="w-2 h-2 rounded-full bg-crimson-600 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
                               )}
                               {notif.title}
                             </span>
-                            <span className="text-2xs text-slate-400 shrink-0">
+                            <span className="text-2xs text-slate-400 shrink-0 font-mono">
                               {new Date(notif.createdAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -180,11 +185,11 @@ export const DonorLayout: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="pt-2 px-3 border-t border-slate-100 text-center">
+                  <div className="pt-2.5 px-3 border-t border-slate-100 text-center">
                     <Link
                       to="/dashboard/opportunities"
                       onClick={() => setNotifDropdownOpen(false)}
-                      className="text-xs font-semibold text-crimson-600 hover:text-crimson-700 inline-flex items-center gap-1"
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 inline-flex items-center gap-1"
                     >
                       View All Opportunities <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
@@ -193,76 +198,89 @@ export const DonorLayout: React.FC = () => {
               )}
             </div>
 
+            {/* Donor Profile Badge / Dropdown */}
             {user?.donorProfile && (
-              <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/80">
-                <span className="text-xs font-bold text-slate-800">
-                  {user.donorProfile.fullName}
-                </span>
-                <BloodGroupBadge bloodGroup={user.donorProfile.bloodGroup} />
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer min-h-[40px]"
+                  aria-label="User profile menu"
+                >
+                  <div className="text-left hidden sm:block">
+                    <div className="text-xs font-bold text-slate-900 leading-tight">
+                      {user.donorProfile.fullName}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-medium">Verified Donor</div>
+                  </div>
+                  <BloodGroupBadge bloodGroup={user.donorProfile.bloodGroup} size="sm" />
+                </button>
+
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-elevated py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <div className="font-bold text-slate-900">{user.donorProfile.fullName}</div>
+                      <div className="text-slate-500 text-2xs truncate">{user.email}</div>
+                    </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition"
+                    >
+                      <User className="w-4 h-4 text-slate-400" />
+                      Manage Profile & Consent
+                    </Link>
+                    <Link
+                      to="/history"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition"
+                    >
+                      <History className="w-4 h-4 text-slate-400" />
+                      Donation Records
+                    </Link>
+                    <div className="border-t border-slate-100 mt-1 pt-1">
+                      <button
+                        onClick={logout}
+                        className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-rose-600 hover:bg-rose-50 transition"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={logout}
-              leftIcon={<LogOut className="w-3.5 h-3.5" />}
-              className="hidden sm:inline-flex"
-            >
-              Sign Out
-            </Button>
-
-            {/* Mobile Hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:text-slate-900"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
           </div>
         </div>
-
-        {/* Mobile Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2">
-            {navLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold',
-                      isActive ? 'bg-crimson-50 text-crimson-700' : 'text-slate-700'
-                    )
-                  }
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">
-                Signed in as {user?.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={logout}>
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Donor View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Navigation Bar (44px+ touch targets) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1 flex items-center justify-around">
+        {navLinks.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  'flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-h-[48px] min-w-[60px] text-[10px] font-semibold transition-colors',
+                  isActive ? 'text-rose-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+                )
+              }
+            >
+              <Icon className="w-5 h-5 mb-0.5" />
+              <span>{item.label.split(' ')[0]}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
     </div>
   );
 };

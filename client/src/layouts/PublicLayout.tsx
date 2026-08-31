@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { HeartHandshake, Shield, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { HeartHandshake, Shield, Menu, X, LogIn, UserPlus, PhoneCall, AlertCircle } from 'lucide-react';
 import { Button } from '../components/common/Button.js';
 import { useAuth } from '../hooks/useAuth.js';
 
@@ -10,18 +10,37 @@ export const PublicLayout: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+      {/* Emergency Hotline Header Banner */}
+      <div className="bg-slate-900 text-white text-xs py-1.5 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider">
+              Emergency
+            </span>
+            <span className="text-slate-300 hidden sm:inline">24/7 Regional Transfusion & Blood Demand Coordination</span>
+          </div>
+          <a
+            href="tel:+97714200000"
+            className="inline-flex items-center gap-1.5 text-rose-400 hover:text-rose-300 font-mono font-semibold transition"
+          >
+            <PhoneCall className="w-3.5 h-3.5" />
+            <span>Hotline: +977-1-4200000</span>
+          </a>
+        </div>
+      </div>
+
       {/* Navigation Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-crimson-600 flex items-center justify-center text-white shadow-xs">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-600/20 transition-transform group-hover:scale-105">
               <HeartHandshake className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-extrabold text-slate-900 text-lg tracking-tight">HemaCare</span>
-              <span className="text-2xs text-crimson-600 font-semibold block -mt-1 tracking-wider uppercase">
-                Blood Registry
+              <span className="font-extrabold text-slate-900 text-lg tracking-tight block">HemaCare</span>
+              <span className="text-[10px] text-rose-600 font-bold block -mt-1 tracking-wider uppercase">
+                Blood Registry & Matching
               </span>
             </div>
           </Link>
@@ -30,8 +49,8 @@ export const PublicLayout: React.FC = () => {
           <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
             <Link
               to="/"
-              className={`hover:text-crimson-600 transition-colors ${
-                location.pathname === '/' ? 'text-crimson-600 font-bold' : ''
+              className={`hover:text-rose-600 transition-colors py-1 ${
+                location.pathname === '/' ? 'text-rose-600 font-bold border-b-2 border-rose-600' : ''
               }`}
             >
               Home
@@ -40,15 +59,15 @@ export const PublicLayout: React.FC = () => {
             {isAuthenticated ? (
               <Link
                 to={isAdmin ? '/admin' : '/dashboard'}
-                className="text-crimson-600 font-bold hover:underline"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition"
               >
-                Go to {isAdmin ? 'Admin Dashboard' : 'Donor Portal'} →
+                Go to {isAdmin ? 'Coordinator Command Center' : 'Donor Portal'} →
               </Link>
             ) : (
               <>
                 <Link
                   to="/admin/login"
-                  className="hover:text-slate-900 flex items-center gap-1 transition-colors"
+                  className="hover:text-slate-900 flex items-center gap-1.5 transition-colors px-2 py-1"
                 >
                   <Shield className="w-3.5 h-3.5 text-slate-400" />
                   Staff Portal
@@ -72,8 +91,8 @@ export const PublicLayout: React.FC = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
-              aria-label="Toggle menu"
+              className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
+              aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -82,11 +101,11 @@ export const PublicLayout: React.FC = () => {
 
         {/* Mobile Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-3 shadow-lg">
+          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-5 space-y-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-slate-700"
+              className="block py-2 text-sm font-semibold text-slate-800 hover:text-rose-600"
             >
               Home
             </Link>
@@ -95,34 +114,34 @@ export const PublicLayout: React.FC = () => {
               <Link
                 to={isAdmin ? '/admin' : '/dashboard'}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-sm font-bold text-crimson-600"
+                className="block py-2.5 px-3 rounded-lg bg-rose-50 text-sm font-bold text-rose-700 border border-rose-200"
               >
-                Go to {isAdmin ? 'Admin Dashboard' : 'Donor Portal'}
+                Open {isAdmin ? 'Coordinator Command Center' : 'Donor Portal'} →
               </Link>
             ) : (
-              <>
+              <div className="pt-2 space-y-2 border-t border-slate-100">
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2 text-sm font-semibold text-slate-700"
+                  className="block w-full py-2.5 text-center text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl"
                 >
-                  Donor Login
+                  Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2 text-sm font-bold text-crimson-600"
+                  className="block w-full py-2.5 text-center text-sm font-bold text-white bg-rose-600 rounded-xl shadow-sm"
                 >
                   Register as Donor
                 </Link>
                 <Link
                   to="/admin/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2 text-sm text-slate-500"
+                  className="block py-2 text-center text-xs text-slate-500 hover:text-slate-700"
                 >
-                  Staff / Admin Login
+                  Hospital Coordinator / Admin Login
                 </Link>
-              </>
+              </div>
             )}
           </div>
         )}
@@ -134,16 +153,29 @@ export const PublicLayout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/80 py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <div className="flex items-center justify-center gap-2 font-bold text-slate-800">
-            <HeartHandshake className="w-4 h-4 text-crimson-600" />
-            HemaCare Blood Donation Management Platform
+      <footer className="bg-white border-t border-slate-200/80 py-10 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center text-white">
+                <HeartHandshake className="w-4 h-4" />
+              </div>
+              <span className="font-extrabold text-slate-900 text-sm">HemaCare Blood Donation Network</span>
+            </div>
+            <div className="flex items-center gap-6 text-xs text-slate-600 font-medium">
+              <Link to="/login" className="hover:text-slate-900">Donor Portal</Link>
+              <Link to="/admin/login" className="hover:text-slate-900">Staff Portal</Link>
+              <Link to="/register" className="hover:text-rose-600">Become a Donor</Link>
+            </div>
           </div>
-          <p>Connecting eligible voluntary blood donors with regional healthcare facilities.</p>
-          <p className="text-2xs text-slate-400">
-            © {new Date().getFullYear()} HemaCare Foundation. All rights reserved. Not a substitute for formal medical evaluation.
-          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-slate-400 text-2xs">
+            <p>© {new Date().getFullYear()} HemaCare Platform. All rights reserved.</p>
+            <p className="flex items-center gap-1 text-slate-500">
+              <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              Basic donation screening indicators are informational only and do not replace certified medical evaluation.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

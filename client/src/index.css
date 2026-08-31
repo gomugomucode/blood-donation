@@ -3,8 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased selection:bg-crimson-100 selection:text-crimson-900;
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-rose-100 selection:text-rose-900;
+  }
+
+  /* Universal visible keyboard focus indicators */
+  :focus-visible {
+    @apply outline-none ring-2 ring-rose-500/40 ring-offset-2;
   }
 }
 
@@ -25,4 +35,21 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Respect user prefers-reduced-motion settings */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Micro-utility for tabular figures in medical metrics */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, LogIn } from 'lucide-react';
+import { Mail, Lock, AlertCircle, LogIn, ShieldAlert } from 'lucide-react';
 import { loginSchema, LoginFormValues } from '../../schemas/auth.schema.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../common/Button.js';
@@ -53,49 +53,68 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
       {serverError && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 p-3.5 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg animate-in fade-in"
+          className="flex items-start gap-2.5 p-3.5 text-xs text-red-800 bg-red-50 border border-red-200 rounded-xl animate-fade-in"
         >
           <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-          <span>{serverError}</span>
+          <span className="font-medium">{serverError}</span>
         </div>
       )}
 
       <Input
         label="Email Address"
         type="email"
-        placeholder="you@example.com"
+        placeholder="e.g. sarah.jenkins@example.org"
         autoComplete="email"
         required
-        leftIcon={<Mail className="w-4 h-4" />}
+        leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
         error={errors.email?.message}
         {...register('email')}
       />
 
-      <Input
-        label="Password"
-        type="password"
-        placeholder="••••••••"
-        autoComplete="current-password"
-        required
-        leftIcon={<Lock className="w-4 h-4" />}
-        error={errors.password?.message}
-        {...register('password')}
-      />
+      <div className="space-y-1">
+        <Input
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          autoComplete="current-password"
+          required
+          leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
+          error={errors.password?.message}
+          {...register('password')}
+        />
+        <div className="flex justify-end pt-1">
+          <Link
+            to="/forgot-password"
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline transition"
+          >
+            Forgot password?
+          </Link>
+        </div>
+      </div>
 
       <Button
         type="submit"
+        variant={isAdmin ? 'secondary' : 'primary'}
+        size="lg"
         className="w-full mt-2"
         isLoading={isSubmitting}
-        leftIcon={<LogIn className="w-4 h-4" />}
+        leftIcon={isAdmin ? <ShieldAlert className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
       >
-        {isAdmin ? 'Sign in to Admin Console' : 'Sign In'}
+        {isAdmin ? 'Sign in to Coordinator Console' : 'Sign In as Donor'}
       </Button>
 
-      {!isAdmin && (
-        <p className="text-center text-xs text-slate-500 pt-2">
+      {!isAdmin ? (
+        <p className="text-center text-xs text-slate-500 pt-3">
           Don't have a donor account yet?{' '}
-          <Link to="/register" className="font-semibold text-crimson-600 hover:text-crimson-700 underline">
+          <Link to="/register" className="font-bold text-rose-600 hover:text-rose-700 underline">
             Register as a Donor
+          </Link>
+        </p>
+      ) : (
+        <p className="text-center text-xs text-slate-500 pt-3">
+          Need clinical or donor access?{' '}
+          <Link to="/login" className="font-bold text-slate-800 hover:underline">
+            Go to Donor Portal
           </Link>
         </p>
       )}
