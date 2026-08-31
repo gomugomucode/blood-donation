@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, PlusCircle, Trash2, Phone, Calendar, Clock, MapPin } from 'lucide-react';
+import { Eye, Edit, PlusCircle, Trash2, Phone, Clock, MapPin } from 'lucide-react';
 import { DonorProfile } from '../../types/index.js';
 import { BloodGroupBadge, EligibilityBadge, Badge } from '../common/Badge.js';
 import { formatDate, calculateAge } from '../../lib/utils.js';

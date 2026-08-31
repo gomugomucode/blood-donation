@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Phone, MapPin, Calendar, Droplet, Clock } from 'lucide-react';
+import { Phone, MapPin, Calendar, Clock } from 'lucide-react';
 import { DonorProfile } from '../../types/index.js';
 import { Card, CardContent } from '../common/Card.js';
 import { BloodGroupBadge, EligibilityBadge } from '../common/Badge.js';

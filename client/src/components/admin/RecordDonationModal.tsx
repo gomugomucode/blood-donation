@@ -9,7 +9,7 @@ import { Input } from '../common/Input.js';
 import { Button } from '../common/Button.js';
 import { BloodGroupBadge } from '../common/Badge.js';
 import { getApiErrorMessage } from '../../lib/api.js';
-import { AlertCircle, Droplet, Building2, Calendar, FileText } from 'lucide-react';
+import { AlertCircle, Droplet, Building2, Calendar } from 'lucide-react';
 
 export interface RecordDonationModalProps {
   isOpen: boolean;
