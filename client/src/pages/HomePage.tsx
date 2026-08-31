@@ -3,14 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
   Droplet,
-  Users,
-  CalendarCheck,
   ArrowRight,
   Activity,
-  Heart,
   Hospital,
   Sparkles,
-  CheckCircle2,
   Lock,
 } from 'lucide-react';
 import { Button } from '../components/common/Button.js';

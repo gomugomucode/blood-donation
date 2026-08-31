@@ -169,11 +169,10 @@ export const AdminAuditLogsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-slate-900 font-semibold font-sans">
-                      {log.user ? (
+                      {log.actorUserId ? (
                         <div>
-                          <span>{log.user.email}</span>
-                          <span className="text-[10px] text-slate-400 font-mono block">
-                            {log.user.role}
+                          <span className="font-mono text-2xs font-bold text-slate-700 truncate block max-w-[140px]">
+                            {log.actorUserId}
                           </span>
                         </div>
                       ) : (
@@ -195,7 +194,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-slate-600 font-sans text-2xs max-w-xs truncate">
-                      {log.details ? JSON.stringify(log.details) : '—'}
+                      {log.metadata ? JSON.stringify(log.metadata) : '—'}
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <button
@@ -217,7 +216,7 @@ export const AdminAuditLogsPage: React.FC = () => {
         {data && data.pagination.totalPages > 1 && (
           <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-mono">
             <div>
-              Page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.totalItems} total events)
+              Page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.total} total events)
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -269,9 +268,9 @@ export const AdminAuditLogsPage: React.FC = () => {
                   <span className="text-slate-900 font-bold">{formatDate(selectedLog.createdAt)}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block font-sans">Actor</span>
+                  <span className="text-slate-400 block font-sans">Actor ID</span>
                   <span className="text-slate-900 font-bold">
-                    {selectedLog.user ? `${selectedLog.user.email} (${selectedLog.user.role})` : 'SYSTEM'}
+                    {selectedLog.actorUserId ? selectedLog.actorUserId : 'SYSTEM'}
                   </span>
                 </div>
                 <div>
@@ -287,7 +286,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                   Structured Payload Data:
                 </span>
                 <pre className="bg-slate-900 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed">
-                  {JSON.stringify(selectedLog.details || {}, null, 2)}
+                  {JSON.stringify(selectedLog.metadata || {}, null, 2)}
                 </pre>
               </div>
             </div>
