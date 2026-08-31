@@ -1,0 +1,54 @@
+import { Router } from 'express';
+import { adminController } from '../controllers/admin.controller.js';
+import { authenticate, requireRole } from '../middleware/auth.middleware.js';
+import { validateBody, validateQuery, validateParams } from '../middleware/validate.middleware.js';
+import {
+  adminDonorQuerySchema,
+  adminUpdateDonorSchema,
+  adminCreateDonationSchema,
+  donorIdParamSchema,
+} from '../validators/admin.validator.js';
+import { Role } from '../types/index.js';
+
+const router = Router();
+
+// Strict security invariant: All /api/v1/admin/* routes require ADMIN role
+router.use(authenticate, requireRole(Role.ADMIN));
+
+router.get('/dashboard', adminController.getDashboard);
+
+router.get('/donors', validateQuery(adminDonorQuerySchema), adminController.getDonors);
+
+router.get(
+  '/donors/:id',
+  validateParams(donorIdParamSchema),
+  adminController.getDonorById
+);
+
+router.patch(
+  '/donors/:id',
+  validateParams(donorIdParamSchema),
+  validateBody(adminUpdateDonorSchema),
+  adminController.updateDonor
+);
+
+router.delete(
+  '/donors/:id',
+  validateParams(donorIdParamSchema),
+  adminController.deactivateDonor
+);
+
+router.get(
+  '/donors/:id/donations',
+  validateParams(donorIdParamSchema),
+  adminController.getDonorDonations
+);
+
+router.post(
+  '/donors/:id/donations',
+  validateParams(donorIdParamSchema),
+  validateBody(adminCreateDonationSchema),
+  adminController.recordDonation
+);
+
+export default router;
