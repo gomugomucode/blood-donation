@@ -1,6 +1,6 @@
 # 🩸 HemaCare — Blood Donation Management System
 
-A production-oriented, scalable, and secure **Blood Donation Management Web Application** designed with clean architectural boundaries, strict RBAC authorization, automated eligibility calculations, and comprehensive test coverage.
+A production-oriented, scalable, and secure **Blood Donation Management & Emergency Blood Request Coordination Web Application** designed with clean architectural boundaries, strict RBAC authorization, automated eligibility calculations, deterministic donor-candidate matching, and comprehensive test coverage.
 
 ---
 
@@ -8,37 +8,44 @@ A production-oriented, scalable, and secure **Blood Donation Management Web Appl
 
 1. [Project Overview](#-project-overview)
 2. [Architecture & Design Decisions](#-architecture--design-decisions)
-3. [Technology Stack](#-technology-stack)
-4. [Monorepo Structure](#-monorepo-structure)
-5. [Database Schema & Models](#-database-schema--models)
-6. [Eligibility Engine](#-eligibility-engine)
-7. [API Specification](#-api-specification)
-8. [Security & Authorization Model](#-security--authorization-model)
-9. [Prerequisites & Environment Setup](#-prerequisites--environment-setup)
-10. [Local Development Commands](#-local-development-commands)
-11. [Testing & Quality Assurance](#-testing--quality-assurance)
-12. [Production Build & Deployment](#-production-build--deployment)
+3. [Blood Requests & Donor Matching Engine](#-blood-requests--donor-matching-engine)
+4. [Technology Stack](#-technology-stack)
+5. [Monorepo Structure](#-monorepo-structure)
+6. [Database Schema & Models](#-database-schema--models)
+7. [Eligibility & Compatibility Engines](#-eligibility--compatibility-engines)
+8. [API Specification](#-api-specification)
+9. [Security & Authorization Model](#-security--authorization-model)
+10. [Prerequisites & Environment Setup](#-prerequisites--environment-setup)
+11. [Local Development Commands](#-local-development-commands)
+12. [Testing & Quality Assurance (86 Passing Tests)](#-testing--quality-assurance-86-passing-tests)
+13. [Production Build & Deployment](#-production-build--deployment)
 
 ---
 
 ## 🏥 Project Overview
 
-HemaCare bridges voluntary blood donors and healthcare centers through a secure, structured registry:
+HemaCare bridges voluntary blood donors, clinical collection teams, and hospital coordinators through a secure registry and coordination platform:
 
 - **For Donors:**
   - Fast, accessible donor registration with blood group specification.
   - Personalized Donor Dashboard with lifetime donation counts and next-donation countdown.
-  - Pure automated **Eligibility Engine** calculating age thresholds and donation intervals (56 days).
+  - Pure automated **Eligibility Engine** calculating age thresholds (18–65) and interval cooldowns (56 days).
   - Profile management for personal contact details and residential address.
   - Complete chronological history of verified clinical donation sessions.
 
-- **For Clinical Administrators:**
-  - Secure staff portal with dashboard metrics (Active Donors, Eligible Donors, Recent Collections, Lifetime Donations).
+- **For Clinical Administrators & Staff:**
+  - Secure staff portal with real-time KPI overview (Active Donors, Eligible Donors, Recent Collections, Open Blood Requests).
   - Active donors by blood group distribution visualization (`O-`, `O+`, `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`).
   - Server-side searchable, filterable, and paginated donor directory.
   - Detailed donor clinical modal with historical records.
   - Procedure logging modal to record whole blood donations with atomic `lastDonationAt` updating.
   - Non-destructive soft-deactivation mechanism (`deletedAt`) to preserve historical auditability.
+  - **Clinical Blood Requests & Emergency Coordination:**
+    - Create and manage hospital blood requests with urgency levels (`CRITICAL`, `HIGH`, `NORMAL`, `LOW`).
+    - Deterministic multi-factor candidate matching and ranking engine (0–100 score).
+    - Ranked donor candidate list with transparent scoring breakdown and contact dispatch logging.
+    - Atomic donation-to-request fulfillment linking transactions.
+    - Automatic request status transitions (`OPEN` -> `PARTIALLY_FULFILLED` -> `FULFILLED`).
 
 ---
 
@@ -50,103 +57,155 @@ graph TD
     Server --> AuthMW[Authentication & RBAC Middleware]
     AuthMW --> Controllers[Controllers Layer]
     Controllers --> Services[Domain Services Layer]
+    Services --> Compatibility[Pure Red-Cell ABO/Rh Compatibility Engine]
+    Services --> Matching[Deterministic 100-pt Matching & Ranking Engine]
     Services --> Eligibility[Pure Eligibility Engine]
+    Services --> Notification[Notification Service Abstraction]
     Services --> Prisma[Prisma ORM Client]
     Prisma --> Postgres[(PostgreSQL Database)]
 ```
 
 ### Key Architectural Boundaries:
-1. **Strict Frontend/Backend Isolation:** The frontend never directly imports Prisma models, database drivers, or server secrets. All interactions flow through typed API service modules (`auth.service.ts`, `donor.service.ts`, `admin.service.ts`).
+1. **Strict Frontend/Backend Isolation:** The frontend never directly imports Prisma models, database drivers, or server secrets. All interactions flow through typed API service modules (`auth.service.ts`, `donor.service.ts`, `admin.service.ts`, `blood-request.service.ts`).
 2. **Server-Decided Roles (Anti-Escalation):** Public registration strictly enforces `role: DONOR` on the server. Client-supplied role injections are ignored and validated against Zod schemas.
-3. **Soft-Delete Strategy:** Deactivating donors marks `deletedAt: now()` rather than destroying records, maintaining relational integrity with past donations.
-4. **Transactional Consistency:** Critical multi-table operations (e.g. User + DonorProfile creation, Donation logging + `lastDonationAt` sync) execute inside `prisma.$transaction`.
-5. **No Age Storing:** Stores immutable `dateOfBirth` as ISO DateTime and derives age dynamically to prevent temporal drift.
+3. **Pure Domain Logic Separation:** Eligibility calculation (`eligibility.service.ts`), ABO/Rh compatibility (`blood-compatibility.service.ts`), and matching ranking (`matching.service.ts`) are pure, testable functions decoupled from database/HTTP concerns.
+4. **Atomic Transactions:** Critical operations—such as registering a donor profile or recording a donation linked to a blood request—execute inside `prisma.$transaction` blocks to guarantee ACID invariants.
+
+---
+
+## 🩸 Blood Requests & Donor Matching Engine
+
+### Red-Cell ABO/Rh Compatibility Matrix
+The system implements pure clinical red-cell compatibility rules:
+- **O- Recipient:** Can only receive from `O-` (Universal donor to others).
+- **O+ Recipient:** Receives from `O-`, `O+`.
+- **A- Recipient:** Receives from `O-`, `A-`.
+- **A+ Recipient:** Receives from `O-`, `O+`, `A-`, `A+`.
+- **B- Recipient:** Receives from `O-`, `B-`.
+- **B+ Recipient:** Receives from `O-`, `O+`, `B-`, `B+`.
+- **AB- Recipient:** Receives from `O-`, `A-`, `B-`, `AB-`.
+- **AB+ Recipient:** Receives from all 8 blood groups (Universal recipient).
+
+### 100-Point Deterministic Candidate Ranking Algorithm
+Candidate donors are evaluated and ranked deterministically using a multi-factor 100-point scoring algorithm:
+1. **Blood Group Compatibility (Max 40 points):**
+   - Exact ABO/Rh match: `40 points`
+   - Compatible alternative donor group: `30 points`
+2. **Eligibility & Interval Readiness (Max 25 points):**
+   - Immediate clinical eligibility (age 18–65, >=56 days since last donation): `25 points`
+   - Ineligible or active cooldown (<56 days): `Excluded from candidate pool`
+3. **Location Proximity (Max 20 points):**
+   - Donor city matches request hospital/regional location: `20 points`
+   - Different regional location: `5 points`
+4. **Donation History Cadence (Max 10 points):**
+   - Well-rested donor (>90 days since last donation): `10 points`
+   - First-time donor (no prior donation history): `8 points`
+   - Eligible interval (56–90 days): `6 points`
+5. **Profile Contact Recency (Max 5 points):**
+   - Valid contact phone & recent profile update: `5 points`
+
+### Medical Disclaimer Notice
+> [!IMPORTANT]
+> The HemaCare matching engine provides application-level screening and coordination recommendations only. All final donor eligibility, health evaluation, and blood safety verification must be clinically established through accredited collection and laboratory crossmatching procedures.
 
 ---
 
 ## 🛠 Technology Stack
 
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 19, TypeScript, Vite, React Router v7, TanStack Query v5, React Hook Form, Zod, Tailwind CSS, Lucide React |
-| **Backend** | Node.js, Express, TypeScript, REST API, Zod validation, Helmet, CORS, Express-Rate-Limit, Morgan |
-| **Database** | PostgreSQL 18, Prisma ORM 6 (User, DonorProfile, Donation, AuditLog models) |
-| **Authentication** | bcryptjs (12 salt rounds), JSON Web Tokens (HS256 with minimal standard claims), HttpOnly SameSite secure cookies |
-| **Testing** | Vitest, Supertest (59 automated tests covering Auth, RBAC, IDOR, Donors, Admin, Donations, Eligibility, Health, Param Validation) |
+### Frontend
+- **React 19** with **TypeScript**
+- **Vite** build tooling
+- **Tailwind CSS** for responsive styling
+- **TanStack Query (React Query v5)** for server-state caching and invalidation
+- **React Hook Form** + **Zod** for schema-driven form validation
+- **Lucide React** for UI icons
+
+### Backend
+- **Node.js** with **Express** & **TypeScript**
+- **PostgreSQL** relational database
+- **Prisma ORM** for type-safe database queries, relations, and migrations
+- **bcryptjs** for salted password hashing (12 rounds)
+- **jsonwebtoken** for HttpOnly session tokens
+- **Helmet**, **cors**, **express-rate-limit** for API security and rate limiting
 
 ---
 
 ## 📂 Monorepo Structure
 
-```text
-blood-donation-app/
-│
-├── client/                     # Frontend SPA
+```
+blood-donation/
+├── client/                     # Frontend React SPA
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/         # Button, Input, Select, Badge, Card, Modal, Pagination, StatCard, etc.
-│   │   │   ├── auth/           # LoginForm, RegistrationForm, ProtectedRoute
-│   │   │   ├── donor/          # DonorCard, ProfileForm, DonationHistory, EligibilityCard
-│   │   │   └── admin/          # AdminHeader, AdminSidebar, DonorTable, DonorFilters, Modals
-│   │   ├── contexts/           # AuthContext & Session management
-│   │   ├── hooks/              # useAuth
-│   │   ├── layouts/            # PublicLayout, DonorLayout, AdminLayout
-│   │   ├── lib/                # api (Axios), utils (formatting, badge colors, cn)
-│   │   ├── pages/              # Home, Login, Register, AdminLogin, Donor & Admin views
-│   │   ├── routes/             # AppRoutes with role guards
-│   │   ├── schemas/            # Zod form schemas
-│   │   ├── services/           # Typed API service clients
-│   │   ├── types/              # Frontend TypeScript interfaces
-│   │   ├── App.tsx             # Root Provider setup
-│   │   └── main.tsx            # DOM entrypoint
-│   ├── public/                 # Static assets & favicon
+│   │   ├── components/         # Reusable UI components (Modals, Badges, Cards, Inputs)
+│   │   ├── hooks/              # Custom hooks (useAuth, useBloodRequests)
+│   │   ├── layouts/            # Public, Donor, and Admin layouts
+│   │   ├── pages/              # Donor & Admin management & request pages
+│   │   ├── services/           # Axios API client modules
+│   │   └── types/              # Frontend TypeScript interfaces
 │   ├── package.json
-│   ├── tsconfig.json
 │   └── vite.config.ts
-│
-├── server/                     # Backend REST API
-│   ├── src/
-│   │   ├── config/             # env validation (Zod fail-fast), db (Prisma singleton)
-│   │   ├── controllers/        # auth, donor, admin controllers
-│   │   ├── middleware/         # authenticate, requireRole, validateBody, errorHandler
-│   │   ├── routes/             # auth, donor, admin, root routes
-│   │   ├── services/           # auth, donor, admin, eligibility services
-│   │   ├── validators/         # Zod API request schemas
-│   │   ├── utils/              # custom error classes, standardized response envelopes
-│   │   ├── types/              # Server TypeScript types & RBAC interfaces
-│   │   ├── app.ts              # Express application configuration
-│   │   └── server.ts           # Server bootstrap & graceful shutdown
+├── server/                     # Backend Express REST API
 │   ├── prisma/
-│   │   ├── schema.prisma       # Database schema, enums, models, indexes
-│   │   └── seed.ts             # Realistic database seed engine
-│   ├── tests/                  # Vitest + Supertest automated suites
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── .gitignore
-├── .env.example
-├── README.md
-└── package.json
+│   │   ├── schema.prisma       # Database schema definition
+│   │   └── migrations/         # Versioned SQL migrations
+│   ├── src/
+│   │   ├── controllers/        # Request handling controllers
+│   │   ├── middlewares/        # Auth, role check, error handler, rate limiters
+│   │   ├── routes/             # Versioned API routes (/api/v1/...)
+│   │   ├── services/           # Domain logic (matching, compatibility, eligibility, requests)
+│   │   ├── validators/         # Zod input validation schemas
+│   │   └── types/              # Server TypeScript definitions
+│   ├── tests/                  # Vitest backend test suites (86 tests)
+│   └── package.json
+├── package.json                # Monorepo root with workspace scripts
+└── README.md                   # Full system documentation
 ```
 
 ---
 
 ## 🗄 Database Schema & Models
 
-### Enums
-- `Role`: `DONOR`, `ADMIN`
-- `BloodGroup`: `A_POSITIVE`, `A_NEGATIVE`, `B_POSITIVE`, `B_NEGATIVE`, `AB_POSITIVE`, `AB_NEGATIVE`, `O_POSITIVE`, `O_NEGATIVE`
-
-### Core Models & Indexes
 ```prisma
+enum Role {
+  DONOR
+  ADMIN
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum RequestStatus {
+  OPEN
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum RequestUrgency {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  passwordHash String
-  role         Role          @default(DONOR)
-  donorProfile DonorProfile?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String
+  role           Role           @default(DONOR)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  donorProfile   DonorProfile?
+  createdRequests BloodRequest[]
 
   @@index([email])
 }
@@ -172,32 +231,50 @@ model DonorProfile {
   @@index([deletedAt])
 }
 
+model BloodRequest {
+  id               String         @id @default(uuid())
+  bloodGroup       BloodGroup
+  unitsRequired    Int
+  unitsFulfilled   Int            @default(0)
+  urgency          RequestUrgency @default(NORMAL)
+  hospitalName     String
+  location         String
+  requiredBy       DateTime
+  contactName      String
+  contactNumber    String
+  patientReference String?
+  notes            String?
+  status           RequestStatus  @default(OPEN)
+  createdById      String?
+  createdBy        User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  closedAt         DateTime?
+  donations        Donation[]
+
+  @@index([bloodGroup])
+  @@index([status])
+  @@index([urgency])
+  @@index([requiredBy])
+  @@index([location])
+}
+
 model Donation {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   donorId        String
-  donor          DonorProfile @relation(fields: [donorId], references: [id], onDelete: Cascade)
-  donatedAt      DateTime     @default(now())
+  donor          DonorProfile  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  bloodRequestId String?
+  bloodRequest   BloodRequest? @relation(fields: [bloodRequestId], references: [id], onDelete: SetNull)
+  donatedAt      DateTime      @default(now())
   location       String
   notes          String?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
 
   @@index([donorId])
+  @@index([bloodRequestId])
   @@index([donatedAt])
 }
 ```
-
----
-
-## 🧪 Eligibility Engine
-
-Located at [`server/src/services/eligibility.service.ts`](file:///c:/Users/Anupam%20Baral/Desktop/blood-donation/server/src/services/eligibility.service.ts), this pure, decoupled service calculates:
-1. **Age Requirement:** Must be between 18 and 65 years old.
-2. **Interval Rule:** Minimum 56 days (8 weeks) between whole blood donations.
-3. **Account Status:** Must not be soft-deleted (`deletedAt == null`).
-4. **Countdown Indicator:** Computes exact `daysUntilEligible` and ISO formatted `nextEligibleDate`.
-
-> [!NOTE]
-> The UI displays a mandatory clear disclaimer: *"Basic eligibility indicator only. Formal medical and hemoglobin screening is performed at the donation center prior to collection."*
 
 ---
 
@@ -218,13 +295,22 @@ Base URL: `/api/v1`
 - `GET   /api/v1/donors/me/eligibility` — Retrieve calculated eligibility status and criteria breakdown.
 
 ### Admin Management (`/admin`)
-- `GET    /api/v1/admin/dashboard` — Aggregated metrics (active donors, eligible count, recent collections, blood group distribution).
+- `GET    /api/v1/admin/dashboard` — Aggregated metrics (active donors, eligible count, recent collections, blood requests pipeline).
 - `GET    /api/v1/admin/donors` — Filterable (`bloodGroup`), searchable (`search`), and paginated (`page`, `limit`) donor list.
 - `GET    /api/v1/admin/donors/:id` — Full donor record with clinical donation history.
 - `PATCH  /api/v1/admin/donors/:id` — Update donor information.
 - `DELETE /api/v1/admin/donors/:id` — Soft-deactivates donor (`deletedAt = now()`).
 - `GET    /api/v1/admin/donors/:id/donations` — Get donation procedures for a donor.
-- `POST   /api/v1/admin/donors/:id/donations` — Log a new blood donation (atomically syncs `lastDonationAt`).
+- `POST   /api/v1/admin/donors/:id/donations` — Log a new blood donation (atomically syncs `lastDonationAt` and updates linked `BloodRequest` if provided).
+
+### Blood Requests & Coordination (`/admin/blood-requests`)
+- `POST /api/v1/admin/blood-requests` — Create clinical blood request with urgency and deadline.
+- `GET  /api/v1/admin/blood-requests` — List blood requests with search, status, urgency, and blood group filters.
+- `GET  /api/v1/admin/blood-requests/:id` — Get request details and linked donations.
+- `PATCH /api/v1/admin/blood-requests/:id` — Update request specifications.
+- `POST /api/v1/admin/blood-requests/:id/cancel` — Cancel active blood request.
+- `GET  /api/v1/admin/blood-requests/:id/matches` — Evaluate and rank eligible candidate donors (0–100 score).
+- `POST /api/v1/admin/blood-requests/:id/notify` — Dispatch coordination notification alert to candidate donor.
 
 ---
 
@@ -233,7 +319,7 @@ Base URL: `/api/v1`
 1. **Password Protection:** Passwords hashed with `bcryptjs` (salt rounds: 12). Plaintext passwords and hashes are never exposed or logged.
 2. **HttpOnly Cookie Authentication:** JWT tokens transmitted via `HttpOnly`, `SameSite: Lax`, and `Secure` (production) cookies, preventing XSS token theft.
 3. **Role-Based Access Control (RBAC):** Backend middleware (`authenticate` & `requireRole`) strictly verifies identity against the database.
-4. **IDOR & Isolation:** Donors can only query `/donors/me/*`. Cross-donor ID access is impossible.
+4. **IDOR & Isolation:** Donors can only query `/donors/me/*`. Cross-donor ID access is prevented.
 5. **Rate Limiting & Headers:** Express Rate Limiting (100 req/15min on auth endpoints) and Helmet HTTP security headers.
 6. **Strict CORS:** Enforces explicit allowed origins (`CLIENT_URL`); wildcard `*` is prohibited.
 
@@ -246,102 +332,73 @@ Base URL: `/api/v1`
 - PostgreSQL `v14+` running locally on port `5432`
 
 ### 2. Environment Variables Configuration
-Copy `.env.example` to `.env` in the root directory:
+Ensure `.env` in the root directory contains:
 
 ```env
-# Database Configuration
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/blood_donation_db?schema=public"
-
-# Server Configuration
+TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/blood_donation_test_db?schema=public"
 PORT=5000
 NODE_ENV=development
-CLIENT_URL=http://localhost:5173
-
-# Authentication Security
-JWT_SECRET=super-secret-jwt-key-must-be-at-least-32-chars-long
+JWT_SECRET=super-secret-production-grade-jwt-signing-key-32-chars-min
 JWT_EXPIRES_IN=7d
-
-# Initial Admin Credentials for Seeding
-ADMIN_EMAIL=admin@blooddonation.org
-ADMIN_PASSWORD=AdminSecurePass123!
+CLIENT_URL=http://localhost:5173
 ```
 
 ---
 
 ## 💻 Local Development Commands
 
-### 1. Install Dependencies
 ```bash
+# Install all dependencies across workspaces
 npm install
-```
 
-### 2. Run Database Migrations
-```bash
+# Run database migrations
 npm run prisma:migrate
-```
 
-### 3. Seed Realistic Test Data
-Populates the admin account (`admin@blooddonation.org` / `AdminSecurePass123!`) and 15+ donors with various blood groups and donation histories:
-```bash
+# Seed administrative and sample records
 npm run prisma:seed
-```
 
-### 4. Run Both Frontend and Backend (Concurrent)
-```bash
+# Start full-stack development servers concurrently
 npm run dev
-```
 
-- **Frontend Client:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:5000/api/v1](http://localhost:5000/api/v1)
-
-### Dedicated Individual Scripts:
-```bash
-npm run dev:server     # Run backend with tsx watch
-npm run dev:client     # Run Vite dev server
-```
-
----
-
-## 🧪 Testing & Quality Assurance
-
-Run the automated backend test suite (41 tests):
-```bash
-npm run test
-```
-
-### Test Suites Included:
-- `tests/eligibility.test.ts` — Boundary tests for age (<18, 18, 65, >65) and donation intervals (0 days, 55 days, 56 days, 90 days, deactivated).
-- `tests/auth.test.ts` — Registration, validation, weak passwords, duplicate emails, login, session cookies, logout.
-- `tests/authorization-security.test.ts` — 401 unauthenticated guards, 403 donor-to-admin blocks, role escalation defenses, IDOR checks.
-- `tests/donor.test.ts` — Profile reads, updates, history queries, eligibility calculation.
-- `tests/admin.test.ts` — Metrics aggregation, search, filtering, pagination, donor editing, donation recording, soft-deletion.
-
-### Typecheck & Linting:
-```bash
+# Run TypeScript compilation checks across all workspaces
 npm run typecheck --workspaces
+
+# Build production bundles
 npm run build --workspaces
 ```
 
 ---
 
-## 📦 Production Build & Deployment
+## 🧪 Testing & Quality Assurance (86 Passing Tests)
 
-1. Build both workspaces for production:
-   ```bash
-   npm run build
-   ```
-2. Apply migrations to production database:
-   ```bash
-   npx prisma migrate deploy --schema=server/prisma/schema.prisma
-   ```
-3. Start the production backend server:
-   ```bash
-   npm run start --workspace=server
-   ```
-4. Serve the static frontend assets from `client/dist/` using Nginx, Cloudflare Pages, AWS S3/CloudFront, or your preferred static host.
+The backend test suite runs with Vitest against an isolated test database (`blood_donation_test_db`):
+
+```bash
+npm test --workspace=server
+```
+
+### Verified Test Suites:
+- `auth.test.ts` (9 tests) — Registration, duplicate prevention, password hashing, session tokens, logout.
+- `authorization-security.test.ts` (9 tests) — Role escalation defense, RBAC access boundaries, cookie tamper protection.
+- `admin.test.ts` (9 tests) — Metrics aggregation, donor pagination, soft deactivation, donation logging.
+- `donor.test.ts` (4 tests) — Personal profile retrieval, contact updates, history access.
+- `blood-compatibility.test.ts` (11 tests) — Pure ABO/Rh red-cell compatibility across all 8 combinations.
+- `matching.test.ts` (3 tests) — 100-point deterministic candidate ranking and Section 32 verification.
+- `blood-request.test.ts` (13 tests) — Request lifecycle, auto-expiration, cancellation, metrics, atomic donation linking.
+- `eligibility.test.ts` (10 tests) — Pure age and interval cooldown calculations.
+- `hardening-security.test.ts` (18 tests) — Header hardening, rate limiting, and CORS constraints.
+
+**Total: 86 passing tests across 9 test files.**
 
 ---
 
-## 📄 License & Compliance
+## 📦 Production Build & Deployment
 
-Developed as a modern, production-grade civic healthcare system. Open-source under the MIT License.
+To build both client and server packages for production:
+
+```bash
+npm run build --workspaces
+```
+
+Artifacts will be generated in `client/dist` (Vite SPA) and `server/dist` (Compiled Node.js application).
