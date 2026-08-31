@@ -10,30 +10,7 @@ import {
   NotificationResult,
   PaginatedResult,
 } from '../types/index.js';
-
-export interface NotificationProvider {
-  send(payload: NotificationPayload): Promise<{ externalId?: string; status: NotificationStatus; error?: string }>;
-}
-
-export class InAppNotificationProvider implements NotificationProvider {
-  public async send(_payload: NotificationPayload): Promise<{ externalId?: string; status: NotificationStatus }> {
-    // In-app notifications are stored directly and are immediately available to the user
-    return { status: NotificationStatus.SENT };
-  }
-}
-
-export class DevelopmentNotificationProvider implements NotificationProvider {
-  constructor(private readonly channelName: 'EMAIL' | 'SMS') {}
-
-  public async send(payload: NotificationPayload): Promise<{ externalId?: string; status: NotificationStatus }> {
-    const mockId = `dev-${this.channelName.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    logger.debug(`[DEV ${this.channelName} SIMULATOR] Dispatched notification to user ${payload.userId}`, {
-      title: payload.title,
-      mockId,
-    });
-    return { externalId: mockId, status: NotificationStatus.SENT };
-  }
-}
+import { NotificationProviderFactory } from './notifications/provider.factory.js';
 
 export interface NotifyDonorInput {
   donorId: string;
@@ -43,27 +20,35 @@ export interface NotifyDonorInput {
 }
 
 export class NotificationService {
-  private providers: Record<NotificationChannel, NotificationProvider>;
-
-  constructor() {
-    this.providers = {
-      [NotificationChannel.IN_APP]: new InAppNotificationProvider(),
-      [NotificationChannel.EMAIL]: new DevelopmentNotificationProvider('EMAIL'),
-      [NotificationChannel.SMS]: new DevelopmentNotificationProvider('SMS'),
-    };
-  }
-
   /**
-   * Dispatches a notification across the specified channel with retry tracking and audit recording.
+   * Dispatches a notification across the specified channel with idempotency keying and audit recording.
    */
   public async sendNotification(
-    payload: NotificationPayload,
+    payload: NotificationPayload & { idempotencyKey?: string; recipientEmail?: string; recipientPhone?: string },
     actorUserId?: string
   ): Promise<NotificationResult> {
-    const provider = this.providers[payload.channel] || this.providers[NotificationChannel.IN_APP];
+    // 1. Idempotency Check
+    if (payload.idempotencyKey) {
+      const existing = await prisma.notification.findUnique({
+        where: { idempotencyKey: payload.idempotencyKey },
+      });
+      if (existing) {
+        logger.info(`Idempotent notification hit for key: ${payload.idempotencyKey}`, {
+          notificationId: existing.id,
+        });
+        return {
+          id: existing.id,
+          channel: existing.channel,
+          status: existing.status,
+          sentAt: existing.sentAt,
+        };
+      }
+    }
+
+    const provider = NotificationProviderFactory.getProvider(payload.channel);
 
     let dispatchResult: { externalId?: string; status: NotificationStatus; error?: string };
-    let attemptCount = 1;
+    const attemptCount = 1;
 
     try {
       dispatchResult = await provider.send(payload);
@@ -85,8 +70,10 @@ export class NotificationService {
         message: payload.message,
         attemptCount,
         lastAttemptAt: new Date(),
+        failedAt: dispatchResult.status === NotificationStatus.FAILED ? new Date() : null,
         errorCode: dispatchResult.error || null,
         providerMessageId: dispatchResult.externalId || null,
+        idempotencyKey: payload.idempotencyKey || null,
         sentAt: dispatchResult.status === NotificationStatus.SENT ? new Date() : null,
       },
     });
@@ -103,6 +90,7 @@ export class NotificationService {
         opportunityId: payload.opportunityId,
         status: notification.status,
         errorCode: dispatchResult.error,
+        idempotencyKey: payload.idempotencyKey,
       },
     });
 
@@ -120,6 +108,13 @@ export class NotificationService {
   public async retryNotification(notificationId: string): Promise<NotificationResult> {
     const notification = await prisma.notification.findUnique({
       where: { id: notificationId },
+      include: {
+        user: {
+          include: {
+            donorProfile: true,
+          },
+        },
+      },
     });
 
     if (!notification) {
@@ -134,7 +129,7 @@ export class NotificationService {
       throw new BadRequestError('Maximum retry attempts (3) exceeded for this notification.');
     }
 
-    const provider = this.providers[notification.channel] || this.providers[NotificationChannel.IN_APP];
+    const provider = NotificationProviderFactory.getProvider(notification.channel);
     const newAttemptCount = notification.attemptCount + 1;
 
     let dispatchResult: { externalId?: string; status: NotificationStatus; error?: string };
@@ -146,6 +141,8 @@ export class NotificationService {
         title: notification.title,
         message: notification.message,
         opportunityId: notification.opportunityId || undefined,
+        recipientEmail: notification.user?.email,
+        recipientPhone: notification.user?.donorProfile?.contactNumber,
       });
     } catch (err) {
       dispatchResult = {
@@ -160,6 +157,7 @@ export class NotificationService {
         status: dispatchResult.status,
         attemptCount: newAttemptCount,
         lastAttemptAt: new Date(),
+        failedAt: dispatchResult.status === NotificationStatus.FAILED ? new Date() : null,
         errorCode: dispatchResult.error || null,
         providerMessageId: dispatchResult.externalId || null,
         sentAt: dispatchResult.status === NotificationStatus.SENT ? new Date() : null,
@@ -204,6 +202,61 @@ export class NotificationService {
               status: true,
               expiresAt: true,
               bloodRequestId: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Retrieves operational notification feed for administrators.
+   */
+  public async getAdminNotifications(
+    query: { page?: number; limit?: number; status?: NotificationStatus; channel?: NotificationChannel } = {}
+  ): Promise<PaginatedResult<any>> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(query.limit) || 15));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.status) where.status = query.status;
+    if (query.channel) where.channel = query.channel;
+
+    const [total, items] = await Promise.all([
+      prisma.notification.count({ where }),
+      prisma.notification.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              donorProfile: {
+                select: {
+                  fullName: true,
+                  bloodGroup: true,
+                  contactNumber: true,
+                },
+              },
             },
           },
         },
@@ -328,6 +381,9 @@ export class NotificationService {
         type: NotificationType.OPPORTUNITY_ALERT,
         title,
         message: message || defaultMsg,
+        recipientEmail: donor.user.email,
+        recipientPhone: donor.contactNumber,
+        idempotencyKey: `direct-${donorId}-${bloodRequestId}-${channel}`,
       },
       actorUserId
     );
