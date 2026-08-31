@@ -5,7 +5,7 @@ import { prisma } from '../src/config/db.js';
 import { BloodGroup } from '../src/types/index.js';
 
 describe('Admin Management API Endpoints', () => {
-  let adminCookie: string[];
+  let adminCookie: string | string[];
   let sampleDonorId: string;
 
   beforeAll(async () => {

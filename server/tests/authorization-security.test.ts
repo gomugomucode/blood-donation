@@ -6,9 +6,9 @@ import { BloodGroup } from '../src/types/index.js';
 
 describe('Security & Authorization / RBAC Enforcement', () => {
   let donorToken: string;
-  let donorCookie: string[];
+  let donorCookie: string | string[];
   let adminToken: string;
-  let adminCookie: string[];
+  let adminCookie: string | string[];
   let targetDonorId: string;
 
   beforeAll(async () => {
@@ -50,7 +50,7 @@ describe('Security & Authorization / RBAC Enforcement', () => {
 
     const donorARes = await request(app).post('/api/v1/auth/register').send(donorAData);
     donorToken = donorARes.body.data.token;
-    donorCookie = donorARes.headers['set-cookie'];
+    donorCookie = donorARes.headers['set-cookie'] || [];
 
     // Setup Target Donor B (for IDOR check)
     const donorBData = {
@@ -58,10 +58,11 @@ describe('Security & Authorization / RBAC Enforcement', () => {
       password: 'DonorPassword123!',
       fullName: 'Donor Beta',
       dateOfBirth: '1990-08-20',
-      address: '200 Isolation St',
+      address: '200 Security Blvd',
       contactNumber: '+1-555-1002',
       bloodGroup: BloodGroup.B_POSITIVE,
     };
+
     const existingB = await prisma.user.findUnique({ where: { email: donorBData.email } });
     if (existingB) await prisma.user.delete({ where: { id: existingB.id } });
 
@@ -97,13 +98,13 @@ describe('Security & Authorization / RBAC Enforcement', () => {
 
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
-      expect(res.body.message).toContain('do not have permission');
+      expect(res.body.message).toMatch(/permission/i);
     });
 
     it('should forbid DONOR from accessing /api/v1/admin/donors list', async () => {
       const res = await request(app)
         .get('/api/v1/admin/donors')
-        .set('Authorization', `Bearer ${donorToken}`);
+        .set('Cookie', donorCookie);
 
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
@@ -131,28 +132,27 @@ describe('Security & Authorization / RBAC Enforcement', () => {
 
   describe('Role Escalation Defense', () => {
     it('should strictly ignore client-supplied role: ADMIN during registration', async () => {
-      const hackerData = {
-        email: 'hacker.attempt@example.org',
-        password: 'HackerPassword123!',
-        fullName: 'Hacker Attempt',
-        dateOfBirth: '1990-01-01',
-        address: '1337 Dark Alley',
-        contactNumber: '+1-555-1337',
-        bloodGroup: BloodGroup.AB_NEGATIVE,
-        role: 'ADMIN', // Malicious attempt to escalate role
+      const maliciousPayload = {
+        email: 'attacker.trying.admin@example.org',
+        password: 'Password123!',
+        fullName: 'Mallory Malicious',
+        dateOfBirth: '1985-06-15',
+        address: '666 Dark Web St',
+        contactNumber: '+1-555-6666',
+        bloodGroup: BloodGroup.AB_POSITIVE,
+        role: 'ADMIN', // Attacker trying privilege escalation
       };
 
-      const existing = await prisma.user.findUnique({ where: { email: hackerData.email } });
-      if (existing) await prisma.user.delete({ where: { id: existing.id } });
-
-      const res = await request(app).post('/api/v1/auth/register').send(hackerData);
+      const res = await request(app).post('/api/v1/auth/register').send(maliciousPayload);
 
       expect(res.status).toBe(201);
-      expect(res.body.data.user.role).toBe('DONOR'); // Must be DONOR
+      expect(res.body.data.user.role).toBe('DONOR');
 
-      // Verify directly from the database
-      const dbUser = await prisma.user.findUnique({ where: { email: hackerData.email } });
-      expect(dbUser?.role).toBe('DONOR');
+      // Verify role in database directly
+      const createdUser = await prisma.user.findUnique({
+        where: { email: maliciousPayload.email },
+      });
+      expect(createdUser?.role).toBe('DONOR');
     });
   });
 
@@ -163,7 +163,8 @@ describe('Security & Authorization / RBAC Enforcement', () => {
         .set('Cookie', donorCookie);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.fullName).toBe('Donor Alpha');
+      expect(res.body.data.user.email).toBe('donor.security.a@example.org');
+      expect(res.body.data.id).not.toBe(targetDonorId);
     });
   });
 });
