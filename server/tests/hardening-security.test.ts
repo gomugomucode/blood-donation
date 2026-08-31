@@ -321,7 +321,7 @@ describe('Phase 10: Security Hardening, Reliability & Audit Verification', () =>
           fullName: 'Donor Bravo Audited',
         });
 
-      const log = await prisma.auditLog.findFirst({
+      const log = await (prisma as any).auditLog.findFirst({
         where: {
           action: 'DONOR_MODIFIED',
           targetId: donorBUser.donorProfile.id,
@@ -345,7 +345,7 @@ describe('Phase 10: Security Hardening, Reliability & Audit Verification', () =>
       expect(donationRes.status).toBe(201);
       const donationId = donationRes.body.data.id;
 
-      const log = await prisma.auditLog.findFirst({
+      const log = await (prisma as any).auditLog.findFirst({
         where: {
           action: 'DONATION_RECORDED',
           targetId: donationId,
