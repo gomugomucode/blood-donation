@@ -32,37 +32,39 @@ export const AdminAuditLogsPage: React.FC = () => {
 
   const getActionBadgeColor = (action: string) => {
     if (action.includes('CANCEL') || action.includes('DEACTIVAT') || action.includes('FAILED')) {
-      return 'bg-rose-50 text-rose-700 border-rose-200';
+      return 'bg-rose-50 text-rose-800 border-rose-200';
     }
     if (action.includes('RECORD') || action.includes('ACCEPTED') || action.includes('REGISTER')) {
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200';
     }
     if (action.includes('DISPATCH') || action.includes('CREATED') || action.includes('LOGIN')) {
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-blue-50 text-blue-800 border-blue-200';
     }
     return 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Security & Audit Logs</h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Immutable Audit Trail
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <ShieldAlert className="w-8 h-8 text-rose-600 shrink-0" />
+              Security & Audit Logs
+            </h1>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 uppercase tracking-wider">
+              Immutable Trail
             </span>
           </div>
-          <p className="text-sm text-slate-600 mt-1">
-            Review security events, coordinator clinical decisions, and administrative actions.
+          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            Review security events, coordinator clinical decisions, and administrative actions with correlation tracking.
           </p>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row gap-3">
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-card flex flex-col sm:flex-row gap-3">
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="relative">
             <Filter className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -72,7 +74,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                 setActionFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 transition"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 transition"
             >
               <option value="">All Security Actions</option>
               <option value="ADMIN_LOGIN">ADMIN_LOGIN</option>
@@ -100,15 +102,15 @@ export const AdminAuditLogsPage: React.FC = () => {
                 setTargetTypeFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 transition"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 transition"
             >
-              <option value="">All Target Entities</option>
-              <option value="User">User</option>
-              <option value="DonorProfile">DonorProfile</option>
-              <option value="BloodRequest">BloodRequest</option>
-              <option value="DonorOpportunity">DonorOpportunity</option>
-              <option value="Notification">Notification</option>
-              <option value="Donation">Donation</option>
+              <option value="">All Target Resources</option>
+              <option value="USER">USER</option>
+              <option value="DONOR_PROFILE">DONOR_PROFILE</option>
+              <option value="BLOOD_REQUEST">BLOOD_REQUEST</option>
+              <option value="DONOR_OPPORTUNITY">DONOR_OPPORTUNITY</option>
+              <option value="DONATION">DONATION</option>
+              <option value="NOTIFICATION">NOTIFICATION</option>
             </select>
           </div>
         </div>
@@ -120,166 +122,180 @@ export const AdminAuditLogsPage: React.FC = () => {
               setTargetTypeFilter('');
               setPage(1);
             }}
-            className="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+            className="px-4 py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition cursor-pointer"
           >
-            Clear Filters
+            Reset Filters
           </button>
         )}
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-card overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-slate-500 text-sm">
-            <div className="inline-block animate-spin w-6 h-6 border-2 border-slate-300 border-t-rose-600 rounded-full mb-2"></div>
-            <div>Loading security audit records...</div>
+          <div className="p-12 text-center text-slate-500 text-xs">
+            Loading secure audit trail records...
           </div>
         ) : !data?.items || data.items.length === 0 ? (
-          <div className="p-12 text-center">
-            <ShieldAlert className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-900">No audit records found</p>
-            <p className="text-xs text-slate-500 mt-1">Try adjusting your filters.</p>
+          <div className="p-12 text-center text-slate-500 space-y-2">
+            <ShieldAlert className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="font-semibold">No audit events match current criteria</p>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">Action</th>
-                    <th className="py-3 px-4">Target Type</th>
-                    <th className="py-3 px-4">Target ID</th>
-                    <th className="py-3 px-4">Actor ID</th>
-                    <th className="py-3 px-4 text-right">Details</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-50/80 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3.5 px-4">Timestamp</th>
+                  <th className="py-3.5 px-4">Action</th>
+                  <th className="py-3.5 px-4">Actor</th>
+                  <th className="py-3.5 px-4">Target Resource</th>
+                  <th className="py-3.5 px-4">Details Snapshot</th>
+                  <th className="py-3.5 px-4 text-right">Inspect</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {data.items.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50/80 transition-colors font-mono">
+                    <td className="py-3.5 px-4 text-slate-500 text-2xs whitespace-nowrap">
+                      {formatDate(log.createdAt)}
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${getActionBadgeColor(
+                          log.action
+                        )}`}
+                      >
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-900 font-semibold font-sans">
+                      {log.user ? (
+                        <div>
+                          <span>{log.user.email}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block">
+                            {log.user.role}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic">SYSTEM</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {log.targetType ? (
+                        <div>
+                          <span className="font-bold text-slate-800">{log.targetType}</span>
+                          {log.targetId && (
+                            <span className="text-[10px] text-slate-400 font-mono block truncate max-w-[120px]">
+                              {log.targetId}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 font-sans text-2xs max-w-xs truncate">
+                      {log.details ? JSON.stringify(log.details) : '—'}
+                    </td>
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => setSelectedLog(log)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition font-sans text-xs font-semibold cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {data.items.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap font-sans">
-                        {formatDate(log.createdAt)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${getActionBadgeColor(
-                            log.action
-                          )}`}
-                        >
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-800 font-sans font-medium">
-                        {log.targetType}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {log.targetId ? log.targetId.substring(0, 8) + '...' : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {log.actorUserId ? log.actorUserId.substring(0, 8) + '...' : 'System'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => setSelectedLog(log)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded font-sans text-xs transition"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-            {/* Pagination Controls */}
-            {data.pagination && data.pagination.totalPages > 1 && (
-              <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-600 font-sans">
-                <div>
-                  Showing Page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.total} records)
-                </div>
-                <div className="flex gap-1.5">
-                  <button
-                    disabled={!data.pagination.hasPrevPage}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="px-2.5 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 transition flex items-center gap-1"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                    Previous
-                  </button>
-                  <button
-                    disabled={!data.pagination.hasNextPage}
-                    onClick={() => setPage((p) => p + 1)}
-                    className="px-2.5 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 transition flex items-center gap-1"
-                  >
-                    Next
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+        {/* Pagination Controls */}
+        {data && data.pagination.totalPages > 1 && (
+          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-mono">
+            <div>
+              Page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.totalItems} total events)
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                disabled={page >= data.pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Audit Detail Modal */}
+      {/* Structured JSON Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-elevated border border-slate-200 overflow-hidden animate-fade-in">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
-                <FileJson className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-semibold text-slate-900 text-sm">Audit Event Snapshot</h3>
+                <FileJson className="w-5 h-5 text-rose-600" />
+                <h3 className="font-bold text-slate-900 text-sm">
+                  Audit Event Snapshot: {selectedLog.action}
+                </h3>
               </div>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs font-sans">
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 font-mono text-2xs">
                 <div>
-                  <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Action</div>
-                  <div className="font-mono font-bold text-slate-900 mt-0.5">{selectedLog.action}</div>
+                  <span className="text-slate-400 block font-sans">Event ID</span>
+                  <span className="text-slate-900 font-bold">{selectedLog.id}</span>
                 </div>
                 <div>
-                  <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Target Type</div>
-                  <div className="font-semibold text-slate-900 mt-0.5">{selectedLog.targetType}</div>
+                  <span className="text-slate-400 block font-sans">Timestamp</span>
+                  <span className="text-slate-900 font-bold">{formatDate(selectedLog.createdAt)}</span>
                 </div>
                 <div>
-                  <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Timestamp</div>
-                  <div className="text-slate-800 mt-0.5">{formatDate(selectedLog.createdAt)}</div>
+                  <span className="text-slate-400 block font-sans">Actor</span>
+                  <span className="text-slate-900 font-bold">
+                    {selectedLog.user ? `${selectedLog.user.email} (${selectedLog.user.role})` : 'SYSTEM'}
+                  </span>
                 </div>
                 <div>
-                  <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Actor ID</div>
-                  <div className="font-mono text-slate-700 mt-0.5 break-all">
-                    {selectedLog.actorUserId || 'System / Automated'}
-                  </div>
+                  <span className="text-slate-400 block font-sans">Target Resource</span>
+                  <span className="text-slate-900 font-bold">
+                    {selectedLog.targetType || 'N/A'}: {selectedLog.targetId || 'N/A'}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <div className="text-slate-600 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">
-                  Event Metadata Payload:
-                </div>
-                <pre className="p-3 bg-slate-900 text-emerald-400 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed max-h-48 border border-slate-800">
-                  {JSON.stringify(selectedLog.metadata || {}, null, 2)}
+                <span className="font-bold text-slate-900 block mb-1 font-sans">
+                  Structured Payload Data:
+                </span>
+                <pre className="bg-slate-900 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed">
+                  {JSON.stringify(selectedLog.details || {}, null, 2)}
                 </pre>
-              </div>
-
-              <div className="text-[11px] text-slate-500 italic bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-amber-900">
-                Audit logs are cryptographically immutable and permanently retained for compliance.
               </div>
             </div>
 
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-medium transition"
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
               >
                 Close Snapshot
               </button>

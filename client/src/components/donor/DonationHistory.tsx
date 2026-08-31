@@ -1,5 +1,5 @@
 import React from 'react';
-import { Droplet, MapPin, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Droplet, MapPin, Calendar, CheckCircle2 } from 'lucide-react';
 import { Donation } from '../../types/index.js';
 import { formatDate } from '../../lib/utils.js';
 import { EmptyState } from '../common/EmptyState.js';

@@ -11,7 +11,6 @@ import {
   Sparkles,
   CheckCheck,
   ArrowRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { BloodGroupBadge } from '../components/common/Badge.js';
 import { cn } from '../lib/utils.js';

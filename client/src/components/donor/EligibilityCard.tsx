@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Calendar, Info, Clock, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Calendar, Clock, ShieldCheck } from 'lucide-react';
 import { EligibilityResult } from '../../types/index.js';
 import { formatDate } from '../../lib/utils.js';
 

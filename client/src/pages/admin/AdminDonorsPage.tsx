@@ -12,7 +12,7 @@ import { Pagination } from '../../components/common/Pagination.js';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner.js';
 import { ErrorState } from '../../components/common/ErrorState.js';
 import { EmptyState } from '../../components/common/EmptyState.js';
-import { UserX, AlertCircle, CheckCircle } from 'lucide-react';
+import { UserX, AlertCircle, CheckCircle, Users } from 'lucide-react';
 
 export const AdminDonorsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -82,11 +82,14 @@ export const AdminDonorsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Donor Registry Directory</h1>
-        <p className="text-xs text-slate-500">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <Users className="w-8 h-8 text-rose-600 shrink-0" />
+          Voluntary Donor Registry
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 mt-1">
           Search, filter, manage voluntary donors, log procedures, and maintain clinical eligibility records.
         </p>
       </div>
@@ -95,10 +98,10 @@ export const AdminDonorsPage: React.FC = () => {
       {notification && (
         <div
           role="alert"
-          className={`flex items-center gap-2 p-3 text-xs rounded-lg border animate-in fade-in ${
+          className={`flex items-center gap-2 p-3.5 text-xs font-semibold rounded-2xl border animate-fade-in ${
             notification.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-red-50 text-red-800 border-red-200'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : 'bg-red-50 text-red-900 border-red-200'
           }`}
         >
           {notification.type === 'success' ? (
@@ -119,27 +122,33 @@ export const AdminDonorsPage: React.FC = () => {
 
       {/* Donor Content */}
       {isLoading ? (
-        <LoadingSpinner label="Loading donor directory records..." />
+        <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-card flex justify-center items-center">
+          <LoadingSpinner label="Loading donor directory records..." />
+        </div>
       ) : isError || !donorData ? (
-        <ErrorState
-          title="Could not load donors"
-          message="Failed to retrieve donor records from database."
-          onRetry={() => refetch()}
-        />
+        <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-card">
+          <ErrorState
+            title="Could not load donors"
+            message="Failed to retrieve donor records from database."
+            onRetry={() => refetch()}
+          />
+        </div>
       ) : donorData.items.length === 0 ? (
-        <EmptyState
-          icon={UserX}
-          title="No Donors Found"
-          description="No donor records matched your search query or blood group filter. Try adjusting your search criteria."
-          action={
-            <button
-              onClick={handleResetFilters}
-              className="text-xs font-semibold text-crimson-600 hover:text-crimson-700 underline cursor-pointer"
-            >
-              Clear All Filters
-            </button>
-          }
-        />
+        <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-card">
+          <EmptyState
+            icon={UserX}
+            title="No Donors Found"
+            description="No donor records matched your search query or blood group filter. Try adjusting your search criteria."
+            action={
+              <button
+                onClick={handleResetFilters}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer"
+              >
+                Clear All Filters
+              </button>
+            }
+          />
+        </div>
       ) : (
         <div className="space-y-4">
           <DonorTable
