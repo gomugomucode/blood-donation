@@ -28,6 +28,7 @@ import { AdminBloodRequestsPage } from '../pages/admin/AdminBloodRequestsPage.js
 import { AdminCreateBloodRequestPage } from '../pages/admin/AdminCreateBloodRequestPage.js';
 import { AdminBloodRequestDetailPage } from '../pages/admin/AdminBloodRequestDetailPage.js';
 import { AdminAuditLogsPage } from '../pages/admin/AdminAuditLogsPage.js';
+import { AdminOperationsPage } from '../pages/admin/AdminOperationsPage.js';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -74,6 +75,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="requests" element={<AdminBloodRequestsPage />} />
         <Route path="requests/create" element={<AdminCreateBloodRequestPage />} />
         <Route path="requests/:id" element={<AdminBloodRequestDetailPage />} />
+        <Route path="operations" element={<AdminOperationsPage />} />
         <Route path="audit-logs" element={<AdminAuditLogsPage />} />
       </Route>
 

@@ -1,168 +1,76 @@
-# HemaCare Production Deployment Guide
+# HEMACARE — PRODUCTION DEPLOYMENT RUNBOOK
 
-This guide details the steps required to deploy the **HemaCare Blood Donation Management Platform** to enterprise cloud environments (Kubernetes, AWS ECS, GCP Cloud Run, or hardened Ubuntu Linux VMs).
+This guide provides end-to-end instructions for deploying the HemaCare Blood Donation Management Platform to production.
 
 ---
 
 ## 1. Architecture Overview
 
-```mermaid
-graph TD
-    Client[Browser / Mobile SPA] -->|HTTPS :443| CDN[CloudFront / Cloudflare Edge]
-    CDN -->|Static Assets| S3[Static Host / S3 Bucket]
-    CDN -->|API Requests /api/*| LB[TLS Termination Load Balancer]
-    LB -->|Reverse Proxy| Nginx[Nginx Ingress / Reverse Proxy]
-    Nginx -->|HTTP :5000 + X-Request-ID| NodeApp[Node.js + Express + TypeScript API]
-    NodeApp -->|Prisma Client Connection Pool| Postgres[(PostgreSQL 16 High-Availability RDS)]
+```
+ [ Client Browser ]
+        │
+        ▼ (HTTPS)
+ [ Vercel / Netlify ] ────► Static SPA Frontend (React 19 + Vite)
+        │
+        ▼ (HTTPS / API calls)
+ [ Render / Railway / AWS ] ──► Express + TypeScript REST API
+        │
+        ├──► Background Notification Worker (Database-backed queue)
+        ├──► Managed PostgreSQL (Prisma ORM)
+        └──► External Gateways (Resend / SendGrid for Email, Twilio for SMS)
 ```
 
 ---
 
-## 2. Environment Configuration Matrix
+## 2. Backend Deployment (e.g. Render / Railway / Docker)
 
-All production secrets must be provisioned via a dedicated secret manager (AWS Secrets Manager, HashiCorp Vault, or GCP Secret Manager). **Never commit production credentials.**
+### Environment Variables
+Configure the following in your cloud provider environment dashboard:
 
-| Variable | Description | Required | Example |
-| :--- | :--- | :--- | :--- |
-| `NODE_ENV` | Runtime environment | Yes | `production` |
-| `PORT` | API listen port | Yes | `5000` |
-| `DATABASE_URL` | PostgreSQL connection pool URL | Yes | `postgresql://user:pass@db-cluster.internal:5432/hemacare?sslmode=require&connection_limit=25` |
-| `JWT_SECRET` | 256-bit cryptographically random HMAC secret | Yes | `base64-random-32-byte-string` |
-| `JWT_EXPIRES_IN` | Token expiration duration | Yes | `7d` |
-| `CLIENT_URL` | Primary canonical SPA domain | Yes | `https://hemacare.org` |
+```env
+NODE_ENV=production
+PORT=10000
+DATABASE_URL=postgresql://user:password@hostname:5432/dbname?sslmode=require
+CLIENT_URL=https://your-frontend-domain.vercel.app
+JWT_SECRET=production_random_secret_at_least_32_chars_long
+JWT_EXPIRES_IN=7d
+ADMIN_EMAIL=admin@blooddonation.org
+ADMIN_PASSWORD=YourSecureProductionAdminPassword123!
+
+# Real Notification Gateways
+EMAIL_PROVIDER=resend
+EMAIL_FROM="HemaCare Registry <alerts@blooddonation.org>"
+EMAIL_API_KEY=re_your_live_resend_api_key
+
+SMS_PROVIDER=twilio
+SMS_FROM=+15551234567
+SMS_ACCOUNT_SID=ACyour_live_twilio_sid
+SMS_AUTH_TOKEN=your_live_twilio_auth_token
+```
+
+### Build & Start Commands
+- **Build Command**: `npm run build --workspace=server && npx prisma migrate deploy --schema=server/prisma/schema.prisma`
+- **Start Command**: `node server/dist/server.js`
 
 ---
 
-## 3. Database Migration Runbook
+## 3. Frontend Deployment (e.g. Vercel / Netlify)
 
-Before deploying updated backend artifacts, apply pending migrations using Prisma CLI:
+### Environment Variables
+- **`VITE_API_URL`**: `https://your-backend-service.onrender.com/api/v1`
 
-```bash
-# 1. Inspect migration status
-npx prisma migrate status --schema=server/prisma/schema.prisma
-
-# 2. Apply non-breaking migrations atomically
-npx prisma migrate deploy --schema=server/prisma/schema.prisma
-```
-
----
-
-## 4. Containerization & Dockerfile
-
-### Production Server Dockerfile (`server/Dockerfile`)
-
-```dockerfile
-# Stage 1: Build
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-COPY server/package*.json ./server/
-RUN npm ci --workspace=server
-COPY server/ ./server/
-RUN npx prisma generate --schema=server/prisma/schema.prisma
-RUN npm run build --workspace=server
-
-# Stage 2: Minimal Runtime
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/server/package*.json ./server/
-RUN npm ci --omit=dev --workspace=server
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/server/prisma ./server/prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-USER node
-EXPOSE 5000
-CMD ["node", "server/dist/server.js"]
-```
+### Build Settings
+- **Framework Preset**: Vite
+- **Root Directory**: `client`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **SPA Rewrites**: Add `vercel.json` rewrite rule `[{"source": "/(.*)", "destination": "/index.html"}]` to support direct deep linking to `/admin`, `/dashboard`, and `/dashboard/opportunities/:id`.
 
 ---
 
-## 5. Kubernetes Deployment Manifest
+## 4. Verification & Health Monitoring
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hemacare-api
-  labels:
-    app: hemacare-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: hemacare-api
-  template:
-    metadata:
-      labels:
-        app: hemacare-api
-    spec:
-      containers:
-        - name: api
-          image: ghcr.io/hemacare/api:1.0.0
-          ports:
-            - containerPort: 5000
-          envFrom:
-            - secretRef:
-                name: hemacare-secrets
-            - configMapRef:
-                name: hemacare-config
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "256Mi"
-            limits:
-              cpu: "1000m"
-              memory: "512Mi"
-          livenessProbe:
-            httpGet:
-              path: /health/live
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 15
-            timeoutSeconds: 3
-          readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-```
-
----
-
-## 6. Nginx Reverse Proxy Configuration
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name api.hemacare.org;
-
-    ssl_certificate /etc/letsencrypt/live/api.hemacare.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.hemacare.org/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    # Security Headers
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 30s;
-        proxy_connect_timeout 5s;
-    }
-}
-```
+Verify endpoints post-deployment:
+1. `GET https://your-backend-service.onrender.com/health/live` $\rightarrow$ `200 OK`
+2. `GET https://your-backend-service.onrender.com/health/ready` $\rightarrow$ `200 OK` (database latency < 50ms)
+3. Log into Admin Portal at `/admin/login` and verify system status on `/admin/operations`.
