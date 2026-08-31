@@ -56,7 +56,7 @@ jobs:
       - name: Typecheck Workspaces
         run: npm run typecheck --workspaces
 
-      - name: Run Automated Test Suites (119 Tests)
+      - name: Run Automated Test Suites (132 Tests)
         run: npm test --workspace=server
 
       - name: Build Production Bundles

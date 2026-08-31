@@ -55,9 +55,9 @@ export const AdminSidebar: React.FC = () => {
         <div className="pt-1">
           <NavLink
             to="/admin/requests/create"
-            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold shadow-sm shadow-rose-600/10 transition-all hover:shadow-md"
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold shadow-sm shadow-rose-600/10 transition-all hover:shadow-md whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 shrink-0" />
             <span>New Blood Request</span>
           </NavLink>
         </div>

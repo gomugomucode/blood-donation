@@ -10,6 +10,10 @@ export type BloodGroup =
   | 'O_POSITIVE'
   | 'O_NEGATIVE';
 
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
+
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ';
+
 export interface User {
   id: string;
   email: string;
@@ -122,7 +126,7 @@ export interface DashboardMetrics {
     id: string;
     donatedAt: string;
     location: string;
-    notes: string | null;
+    notes?: string | null;
     donor: {
       id: string;
       fullName: string;

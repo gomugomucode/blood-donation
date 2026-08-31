@@ -85,8 +85,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
           </p>
         </div>
         <Link to="/admin/requests/create">
-          <Button variant="critical" size="md">
-            <Plus className="w-4 h-4 mr-1.5" />
+          <Button variant="critical" size="md" leftIcon={<Plus className="w-4 h-4" />}>
             New Blood Request
           </Button>
         </Link>

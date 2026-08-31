@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Load environment variables
 dotenv.config();
 
-const envSchema = z
+export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().default('5000').transform((val) => parseInt(val, 10)),
@@ -69,14 +69,14 @@ const envSchema = z
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
-export const parseEnv = (customEnv: Record<string, any> = process.env): EnvConfig => {
+export const parseEnv = (customEnv: Record<string, any> = process.env, shouldExitOnError: boolean = false): EnvConfig => {
   const result = envSchema.safeParse(customEnv);
   if (!result.success) {
     const errorDetails = result.error.issues
       .map((issue) => ` - ${issue.path.join('.')}: ${issue.message}`)
       .join('\n');
-    console.error(`❌ Critical Environment Variable Configuration Error:\n${errorDetails}`);
-    if (customEnv.NODE_ENV !== 'test') {
+    if (shouldExitOnError && process.env.NODE_ENV !== 'test') {
+      console.error(`❌ Critical Environment Variable Configuration Error:\n${errorDetails}`);
       process.exit(1);
     }
     throw new Error(`Environment validation failed:\n${errorDetails}`);
@@ -84,4 +84,4 @@ export const parseEnv = (customEnv: Record<string, any> = process.env): EnvConfi
   return result.data;
 };
 
-export const env = parseEnv();
+export const env = parseEnv(process.env, true);

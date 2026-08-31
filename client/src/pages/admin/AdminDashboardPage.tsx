@@ -82,8 +82,12 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <Link to="/admin/requests/create" className="w-full sm:w-auto">
-            <Button variant="critical" size="md" className="w-full">
-              <Plus className="w-4 h-4 mr-1.5" />
+            <Button
+              variant="critical"
+              size="md"
+              leftIcon={<Plus className="w-4 h-4" />}
+              className="w-full"
+            >
               New Blood Request
             </Button>
           </Link>

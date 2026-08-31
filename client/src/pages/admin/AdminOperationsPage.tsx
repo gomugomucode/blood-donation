@@ -9,7 +9,6 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   Send,
   Zap,
 } from 'lucide-react';
@@ -28,7 +27,6 @@ export const AdminOperationsPage: React.FC = () => {
   // 1. Fetch live system status
   const {
     data: systemStatus,
-    isLoading: isStatusLoading,
     refetch: refetchStatus,
   } = useQuery({
     queryKey: ['admin-operations-system-status'],

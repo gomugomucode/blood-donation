@@ -83,7 +83,7 @@ export class AdminOperationsController {
    */
   public retryNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const result = await notificationService.retryNotification(id);
       sendSuccess(res, result, 'Notification retry dispatched successfully.');
     } catch (error) {
