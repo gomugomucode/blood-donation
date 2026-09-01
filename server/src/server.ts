@@ -1,9 +1,23 @@
+import { execSync } from 'child_process';
 import bcrypt from 'bcryptjs';
 import { app } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
 import { notificationWorker } from './workers/notification.worker.js';
+
+const runMigrations = async () => {
+  if (env.NODE_ENV === 'test') return;
+  try {
+    logger.info('Applying database migrations (npx prisma migrate deploy)...');
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    logger.info('Database migrations applied successfully');
+  } catch (error) {
+    logger.warn('Database migration check on startup encountered a warning or error', {
+      error: (error as Error).message,
+    });
+  }
+};
 
 const ensureAdminUser = async () => {
   try {
@@ -28,11 +42,14 @@ const ensureAdminUser = async () => {
 
 const startServer = async () => {
   try {
-    // 1. Verify database connection on startup
+    // 1. Run database migrations on startup if needed
+    await runMigrations();
+
+    // 2. Verify database connection on startup
     await prisma.$connect();
     logger.info('Connected to PostgreSQL database successfully');
 
-    // 2. Ensure initial admin user exists
+    // 3. Ensure initial admin user exists
     await ensureAdminUser();
 
     // 3. Start asynchronous notification worker (non-test environments)
