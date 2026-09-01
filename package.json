@@ -18,7 +18,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "prisma:migrate": "npm run prisma:migrate --workspace=server",
     "prisma:seed": "npm run prisma:seed --workspace=server",
-    "postinstall": "npm run prisma:generate --workspace=server --if-present"
+    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma || true"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
