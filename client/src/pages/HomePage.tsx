@@ -2,12 +2,19 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
-  Droplet,
+  Droplets,
   ArrowRight,
   Activity,
   Hospital,
-  Sparkles,
   Lock,
+  Heart,
+  Users,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  AlertCircle,
+  Calendar,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../components/common/Button.js';
 import { Card } from '../components/common/Card.js';
@@ -61,104 +68,176 @@ export const HomePage: React.FC = () => {
   const steps = [
     {
       num: '01',
-      title: 'Register & Complete Basic Screening',
-      desc: 'Create your secure account, declare your blood type and age eligibility, and set your outreach preferences.',
+      title: 'Register & Basic Screening',
+      desc: 'Create your secure account, declare your blood type and age eligibility, and set confidential contact preferences.',
     },
     {
       num: '02',
-      title: 'Receive Targeted Match Opportunities',
-      desc: 'When a hospital care team in your region submits a compatible request, you receive a direct notification.',
+      title: 'Get Matched Locally',
+      desc: 'When a verified regional hospital enters a matching blood request, you receive a direct notification.',
     },
     {
       num: '03',
-      title: 'Donate & Build Verified History',
-      desc: 'Authorized clinical staff verify your donation on-site, recording an immutable record of your life-saving impact.',
+      title: 'Confirm Your Availability',
+      desc: 'Review request urgency, distance, and facility location, then accept the donation opportunity.',
+    },
+    {
+      num: '04',
+      title: 'Donate & Build Record',
+      desc: 'Transfusion specialists verify your donation on-site, recording an immutable log in your donor history.',
     },
   ];
 
   return (
-    <div className="space-y-16 py-6 sm:py-10">
-      {/* Hero Section */}
+    <div className="space-y-16 sm:space-y-24 py-6 sm:py-10 text-[#1F2937]">
+      {/* 1. Human-Centered Two-Column Hero (Warm Soft Rose Surface #FFF7F8) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 text-white p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-2xl border border-slate-800/80">
-          <div className="relative z-10 max-w-3xl space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold uppercase tracking-wider">
-              <Activity className="w-3.5 h-3.5 text-rose-400" />
-              Verified Voluntary Blood Donor Registry
+        <div className="rounded-3xl bg-[#FFF7F8] border border-[#FFE4E8] p-6 sm:p-10 lg:p-14 relative overflow-hidden shadow-xs">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center relative z-10">
+            {/* Left Column: Copy & CTAs */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF0F2] border border-[#FFE4E8] text-[#D92D45] text-xs font-bold uppercase tracking-wider">
+                <Activity className="w-3.5 h-3.5 text-[#D92D45]" />
+                BLOOD DONATION • HEMACARE
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl lg:text-5xl font-extrabold text-[#1F2937] tracking-tight leading-[1.15]">
+                Your donation can help someone when they{' '}
+                <span className="text-[#D92D45]">need it most</span>.
+              </h1>
+
+              <p className="text-sm sm:text-base text-[#667085] leading-relaxed max-w-xl">
+                HemaCare coordinates voluntary blood donors with regional blood banks and emergency hospital care teams. Fast, confidential, and verified.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3.5 pt-1">
+                <Link to="/register">
+                  <Button size="lg" variant="primary" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                    Become a Donor
+                  </Button>
+                </Link>
+                <a href="#how-it-works">
+                  <Button size="lg" variant="outline">
+                    How It Works
+                  </Button>
+                </a>
+              </div>
+
+              {/* Supported Trust Metrics */}
+              <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-[#FFE4E8] max-w-lg">
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-[#1F2937] font-mono tabular-nums">24/7</div>
+                  <div className="text-2xs sm:text-xs text-[#667085] font-medium">Emergency coordination</div>
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-[#D92D45] font-mono tabular-nums">8 Groups</div>
+                  <div className="text-2xs sm:text-xs text-[#667085] font-medium">ABO/Rh compatibility</div>
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-[#15803D] font-mono tabular-nums">Verified</div>
+                  <div className="text-2xs sm:text-xs text-[#667085] font-medium">Transfusion registry</div>
+                </div>
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
-              One voluntary donation can save up to <span className="text-rose-500 underline decoration-rose-500/40">three lives</span>.
-            </h1>
+            {/* Right Column: Warm Human Healthcare Card */}
+            <div className="lg:col-span-5">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E7E5E4] shadow-card space-y-5 relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-[#FFF0F2] text-[#D92D45] flex items-center justify-center border border-[#FFE4E8]">
+                      <Heart className="w-5 h-5 fill-[#D92D45]" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-[#1F2937] block">Regional Blood Bank Sync</span>
+                      <span className="text-[11px] text-[#667085]">Verified Healthcare Facilities</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#15803D] border border-[#DCFCE7] text-[11px] font-bold">
+                    Active Registry
+                  </span>
+                </div>
 
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-              HemaCare coordinates voluntary donors with regional blood banks and emergency hospital care teams. Fast, confidential, and verified.
-            </p>
+                {/* Simulated Real Request Card */}
+                <div className="p-4 rounded-2xl bg-[#FAF9F7] border border-[#E7E5E4] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#FFF0F2] text-[#D92D45] font-extrabold font-mono text-xs border border-[#FFE4E8]">
+                        O−
+                      </span>
+                      <span className="text-xs font-bold text-[#1F2937]">Emergency Trauma Request</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#FEF2F2] text-[#B42318] border border-[#FEE2E2]">
+                      High Urgency
+                    </span>
+                  </div>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link to="/register">
-                <Button size="lg" variant="critical" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  Register as a Donor
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="bg-slate-900/80 text-white border-slate-700 hover:bg-slate-800">
-                  Donor Sign In
-                </Button>
-              </Link>
+                  <div className="grid grid-cols-2 gap-2 text-2xs text-[#667085] pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <Hospital className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+                      <span className="truncate">Lumbini Zonal Hospital</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+                      <span>Butwal, Nepal</span>
+                    </div>
+                  </div>
+
+                  {/* Fulfillment Progress */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex justify-between text-2xs font-semibold">
+                      <span className="text-[#667085]">Fulfillment</span>
+                      <span className="text-[#1F2937] font-mono">4 / 8 units (50%)</span>
+                    </div>
+                    <div className="h-2 w-full bg-[#E7E5E4] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#D92D45] rounded-full w-1/2 transition-all duration-300" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-2xs text-[#667085] pt-1">
+                  <span className="flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#15803D]" />
+                    Zero Patient PHI Shared
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-[#B45309]" />
+                    Needed within 24h
+                  </span>
+                </div>
+              </div>
             </div>
-
-            {/* Quick Live Stats Bar */}
-            <div className="grid grid-cols-3 gap-4 pt-8 border-t border-slate-800/80 max-w-lg text-left">
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-white font-mono">100%</div>
-                <div className="text-2xs text-slate-400 font-medium">Voluntary & Verified</div>
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-rose-400 font-mono">56 Days</div>
-                <div className="text-2xs text-slate-400 font-medium">Safe Donation Cadence</div>
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-white font-mono">24/7</div>
-                <div className="text-2xs text-slate-400 font-medium">Emergency Response</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Decorative Droplet */}
-          <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none hidden lg:block">
-            <Droplet className="w-[420px] h-[420px] text-rose-500" />
           </div>
         </div>
       </section>
 
-      {/* Interactive Blood Compatibility Matrix */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-card">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
+      {/* 2. Interactive Blood Compatibility Explorer (id="compatibility") */}
+      <section id="compatibility" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-20">
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E7E5E4] shadow-card space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-1.5 text-left max-w-xl">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D92D45] uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-[#D92D45]" />
                 ABO & Rh(D) Compatibility
               </div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Interactive Blood Compatibility Explorer
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight">
+                Which blood type do you have?
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600">
-                Select your blood type to discover which patient groups you can safely help.
+              <p className="text-xs sm:text-sm text-[#667085]">
+                Select your blood group to see who you can help and which groups you can receive in an emergency.
               </p>
             </div>
 
-            {/* Blood Selector Pills */}
-            <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            {/* Blood Selector Cards */}
+            <div className="flex flex-wrap gap-2">
               {Object.keys(compatibilityMap).map((bt) => (
                 <button
                   key={bt}
                   onClick={() => setSelectedBlood(bt)}
-                  className={`px-3 py-1.5 rounded-xl font-bold font-mono text-xs transition-all ${
+                  className={`px-3.5 py-2 rounded-xl font-bold font-mono text-xs sm:text-sm transition-all border cursor-pointer ${
                     selectedBlood === bt
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'text-slate-700 hover:bg-white/80'
+                      ? 'bg-[#D92D45] text-white border-[#D92D45] shadow-xs'
+                      : 'bg-white text-[#1F2937] border-[#E7E5E4] hover:bg-[#FFF7F8] hover:border-[#FFE4E8]'
                   }`}
                 >
                   {bt}
@@ -167,26 +246,27 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-extrabold font-mono text-sm border border-rose-200">
+          {/* Compatibility Display Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#FAF9F7] p-6 sm:p-8 rounded-2xl border border-[#E7E5E4]">
+            <div className="space-y-4 text-left">
+              <div className="flex items-center gap-2.5">
+                <span className="px-3 py-1.5 rounded-xl bg-[#FFF0F2] text-[#D92D45] font-extrabold font-mono text-base border border-[#FFE4E8]">
                   {selectedBlood}
                 </span>
-                <span className="text-xs font-bold text-slate-900">
+                <span className="text-xs sm:text-sm font-bold text-[#1F2937]">
                   {compatibilityMap[selectedBlood].tag}
                 </span>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Patients Who Can Receive Your Red Blood Cells:
+                <p className="text-xs font-bold uppercase tracking-wider text-[#667085] mb-2.5">
+                  You Can Safely Donate Red Blood Cells To:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {compatibilityMap[selectedBlood].canDonateTo.map((target) => (
                     <span
                       key={target}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold font-mono text-xs border border-emerald-200 shadow-2xs"
+                      className="px-3 py-1.5 rounded-xl bg-[#F0FDF4] text-[#15803D] font-bold font-mono text-xs sm:text-sm border border-[#DCFCE7]"
                     >
                       {target}
                     </span>
@@ -195,77 +275,193 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-3 md:border-l md:border-slate-200 md:pl-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                Blood Types You Can Receive In An Emergency:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {compatibilityMap[selectedBlood].canReceiveFrom.map((source) => (
-                  <span
-                    key={source}
-                    className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 font-bold font-mono text-xs border border-blue-200 shadow-2xs"
-                  >
-                    {source}
-                  </span>
-                ))}
+            <div className="space-y-4 text-left md:border-l md:border-[#E7E5E4] md:pl-8">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#667085] mb-2.5">
+                  Blood Types You Can Receive In An Emergency:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {compatibilityMap[selectedBlood].canReceiveFrom.map((source) => (
+                    <span
+                      key={source}
+                      className="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] font-bold font-mono text-xs sm:text-sm border border-[#DBEAFE]"
+                    >
+                      {source}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 text-2xs text-[#667085] flex items-start gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-[#B45309] shrink-0 mt-0.5" />
+                <span>
+                  This is an informational red-cell compatibility guide. Final compatibility and eligibility are confirmed by qualified transfusion professionals.
+                </span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How Donation Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-10 space-y-1">
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">How HemaCare Works</h2>
-          <p className="text-xs sm:text-sm text-slate-600">
-            A secure clinical coordination loop connecting donors and hospitals.
+      {/* 3. How HemaCare Works (id="how-it-works") */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-20">
+        <div className="text-center max-w-xl mx-auto mb-10 sm:mb-12 space-y-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D92D45] uppercase tracking-wider">
+            <Users className="w-3.5 h-3.5" />
+            Simple & Safe Process
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight">
+            How HemaCare Works
+          </h2>
+          <p className="text-xs sm:text-sm text-[#667085]">
+            A confidential, physician-guided coordination network connecting voluntary donors with regional blood needs.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {steps.map((step) => (
-            <Card key={step.num} className="p-6 space-y-4 border-slate-200/80 hover:shadow-card-hover transition-all">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-700 font-mono font-extrabold flex items-center justify-center text-sm border border-rose-100">
+            <Card key={step.num} className="p-6 space-y-4 border-[#E7E5E4] hover:shadow-card-hover transition-all text-left">
+              <div className="w-11 h-11 rounded-2xl bg-[#FFF0F2] text-[#D92D45] font-mono font-extrabold flex items-center justify-center text-sm border border-[#FFE4E8]">
                 {step.num}
               </div>
-              <h3 className="text-base font-bold text-slate-900">{step.title}</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">{step.desc}</p>
+              <h3 className="text-base font-bold text-[#1F2937]">{step.title}</h3>
+              <p className="text-xs text-[#667085] leading-relaxed">{step.desc}</p>
             </Card>
           ))}
         </div>
       </section>
 
-      {/* Security & Clinical Governance Trust Panel */}
+      {/* 4. Active Blood Requests Preview */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center">
+        <div className="bg-[#FFF7F8] rounded-3xl p-6 sm:p-10 border border-[#FFE4E8] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="text-left space-y-1">
+              <span className="text-xs font-bold text-[#D92D45] uppercase tracking-wider block">
+                Regional Transfusion Needs
+              </span>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#1F2937]">
+                Active Hospital Blood Requests
+              </h2>
+            </div>
+            <Link to="/register">
+              <Button size="sm" variant="primary">
+                Register to Help
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Request Card 1 */}
+            <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] shadow-card space-y-4 text-left">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-3 py-1 rounded-xl bg-[#FFF0F2] text-[#D92D45] font-extrabold font-mono text-sm border border-[#FFE4E8]">
+                    O−
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1F2937]">Emergency Trauma Care</h3>
+                    <p className="text-xs text-[#667085] flex items-center gap-1">
+                      <Hospital className="w-3.5 h-3.5" /> Lumbini Zonal Hospital • Butwal
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FEF2F2] text-[#B42318] border border-[#FEE2E2] text-2xs font-bold">
+                  CRITICAL
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-[#667085]">Fulfillment</span>
+                  <span className="text-[#1F2937] font-mono font-semibold">4 / 8 units fulfilled</span>
+                </div>
+                <div className="h-2 w-full bg-[#FAF9F7] border border-[#E7E5E4] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#D92D45] rounded-full w-1/2" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-2xs text-[#667085] pt-1">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" /> Needed by: Today
+                </span>
+                <Link to="/login" className="text-[#D92D45] font-semibold hover:underline">
+                  Respond to Request →
+                </Link>
+              </div>
+            </div>
+
+            {/* Request Card 2 */}
+            <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] shadow-card space-y-4 text-left">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-3 py-1 rounded-xl bg-[#FFF0F2] text-[#D92D45] font-extrabold font-mono text-sm border border-[#FFE4E8]">
+                    A+
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1F2937]">Surgical Transfusion Need</h3>
+                    <p className="text-xs text-[#667085] flex items-center gap-1">
+                      <Hospital className="w-3.5 h-3.5" /> Kathmandu Medical Center • Kathmandu
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FFFBEB] text-[#B45309] border border-[#FEF3C7] text-2xs font-bold">
+                  HIGH
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-[#667085]">Fulfillment</span>
+                  <span className="text-[#1F2937] font-mono font-semibold">2 / 4 units fulfilled</span>
+                </div>
+                <div className="h-2 w-full bg-[#FAF9F7] border border-[#E7E5E4] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#D92D45] rounded-full w-1/2" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-2xs text-[#667085] pt-1">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" /> Needed by: Within 48 hours
+                </span>
+                <Link to="/login" className="text-[#D92D45] font-semibold hover:underline">
+                  Respond to Request →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Clinical Governance & Privacy Safeguards Panel (Warm White Surfaces #FFFFFF) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#E7E5E4] shadow-card grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+          <div className="space-y-2.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#F0FDF4] text-[#15803D] flex items-center justify-center border border-[#DCFCE7]">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold">Privacy Redaction Guarantee</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Donors receive only necessary matching parameters (blood group, general facility, deadline). Patient diagnoses and identities are never exposed.
+            <h3 className="text-base font-bold text-[#1F2937]">Privacy Redaction Guarantee</h3>
+            <p className="text-xs text-[#667085] leading-relaxed">
+              Donors receive only necessary matching parameters (blood group, general facility, deadline). Patient diagnoses, medical record numbers, and identities are never exposed.
             </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-slate-800 text-rose-400 flex items-center justify-center">
+          <div className="space-y-2.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#FFF0F2] text-[#D92D45] flex items-center justify-center border border-[#FFE4E8]">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold">Anti-Fatigue Safeguards</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Our automated dispatch engine limits outreach frequency and enforces interval cooldowns, ensuring donors are never overwhelmed.
+            <h3 className="text-base font-bold text-[#1F2937]">Anti-Fatigue Safeguards</h3>
+            <p className="text-xs text-[#667085] leading-relaxed">
+              Our automated dispatch engine limits outreach frequency and enforces interval cooldowns (56 days for whole blood), ensuring donors are never overwhelmed.
             </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-slate-800 text-blue-400 flex items-center justify-center">
+          <div className="space-y-2.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center border border-[#DBEAFE]">
               <Hospital className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold">Verified Medical Facility Sync</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Donation records are verified only after physical collection by authorized transfusion staff, maintaining unbroken clinical integrity.
+            <h3 className="text-base font-bold text-[#1F2937]">Verified Clinical Facility Sync</h3>
+            <p className="text-xs text-[#667085] leading-relaxed">
+              Donation records are verified only after physical collection by authorized transfusion staff, maintaining unbroken clinical integrity across all regional hospitals.
             </p>
           </div>
         </div>

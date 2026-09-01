@@ -3,22 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-main: #FAF9F7;
+    --surface-main: #FFFFFF;
+    --surface-soft: #FFF7F8;
+    --brand-primary: #D92D45;
+    --brand-dark: #8F1D35;
+    --brand-soft: #FFE4E8;
+    --text-primary: #1F2937;
+    --text-secondary: #667085;
+    --border-subtle: #E7E5E4;
+  }
+
   html {
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
     -webkit-tap-highlight-color: transparent;
+    background-color: #FAF9F7;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased selection:bg-rose-100 selection:text-rose-900;
+    background-color: #FAF9F7;
+    color: #1F2937;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply antialiased selection:bg-[#FFE4E8] selection:text-[#8F1D35];
   }
 
   /* Universal visible keyboard focus indicators */
   :focus-visible {
-    @apply outline-none ring-2 ring-rose-500/40 ring-offset-2;
+    @apply outline-none ring-2 ring-[#D92D45]/40 ring-offset-2;
   }
 }
 
-/* Custom Scrollbar for dashboard tables and modals */
+/* Custom Scrollbar for tables and modals */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -29,12 +45,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E7E5E4;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #D6D3D1;
 }
 
 /* Respect user prefers-reduced-motion settings */
@@ -49,7 +65,7 @@
   }
 }
 
-/* Micro-utility for tabular figures in medical metrics */
+/* Tabular figures for blood quantities, stats, and metrics */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }

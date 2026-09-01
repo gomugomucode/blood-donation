@@ -26,29 +26,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex flex-row items-center justify-center font-semibold rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer active:scale-[0.98] whitespace-nowrap min-h-[40px] sm:min-h-[auto]';
+      'inline-flex flex-row items-center justify-center font-semibold rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer active:scale-[0.98] whitespace-nowrap min-h-[38px] sm:min-h-[auto]';
 
     const variants = {
       primary:
-        'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white focus-visible:ring-rose-500 shadow-sm hover:shadow-md shadow-rose-600/10',
+        'bg-[#D92D45] hover:bg-[#B42318] active:bg-[#8F1D35] text-white focus-visible:ring-[#D92D45] shadow-xs hover:shadow-sm',
       secondary:
-        'bg-slate-900 hover:bg-slate-850 active:bg-black text-white focus-visible:ring-slate-700 shadow-sm hover:shadow-md',
+        'bg-[#FAF9F7] hover:bg-white active:bg-[#F5F5F4] text-[#1F2937] border border-[#E7E5E4] focus-visible:ring-[#D92D45] shadow-xs',
       danger:
-        'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus-visible:ring-red-500 shadow-sm',
+        'bg-[#B42318] hover:bg-[#991B1B] active:bg-[#7F1D1D] text-white focus-visible:ring-[#B42318] shadow-xs',
       critical:
-        'bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-bold shadow-md shadow-rose-900/20 focus-visible:ring-red-600',
+        'bg-[#D92D45] hover:bg-[#B42318] active:bg-[#8F1D35] text-white font-bold shadow-xs focus-visible:ring-[#D92D45]',
       success:
-        'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white focus-visible:ring-emerald-500 shadow-sm',
+        'bg-[#15803D] hover:bg-[#166534] active:bg-[#14532D] text-white focus-visible:ring-[#15803D] shadow-xs',
       outline:
-        'border border-slate-300/90 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 focus-visible:ring-slate-400 shadow-xs',
+        'border border-[#E7E5E4] bg-white text-[#1F2937] hover:bg-[#FAF9F7] hover:border-[#D6D3D1] active:bg-[#F5F5F4] focus-visible:ring-[#D92D45] shadow-xs',
       ghost:
-        'bg-transparent text-slate-700 hover:bg-slate-100/80 active:bg-slate-200/80 focus-visible:ring-slate-400',
+        'bg-transparent text-[#1F2937] hover:bg-[#FFF0F2] hover:text-[#D92D45] active:bg-[#FFE4E8] focus-visible:ring-[#D92D45]',
     };
 
     const sizes = {
-      sm: 'text-xs px-3.5 py-1.5 gap-1.5 h-8 sm:h-8',
-      md: 'text-sm px-4 py-2.5 gap-2 h-10',
-      lg: 'text-base px-6 py-3 gap-2.5 h-12',
+      sm: 'text-xs px-3 py-1.5 gap-1.5 h-8',
+      md: 'text-xs sm:text-sm px-4 py-2 gap-2 h-10',
+      lg: 'text-sm sm:text-base px-6 py-2.5 gap-2.5 h-12',
     };
 
     return (

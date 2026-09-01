@@ -54,28 +54,28 @@ export const DonorDashboardPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 text-left">
+      {/* 1. Warm Healthcare Welcome Banner */}
+      <div className="bg-[#FFF7F8] border border-[#FFE4E8] rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-crimson-600/30 text-crimson-300 text-2xs font-bold uppercase tracking-wider">
-            <HeartHandshake className="w-3.5 h-3.5" />
-            Active Voluntary Donor
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF0F2] text-[#D92D45] text-xs font-bold uppercase tracking-wider border border-[#FFE4E8]">
+            <HeartHandshake className="w-3.5 h-3.5 text-[#D92D45]" />
+            Registered Voluntary Donor
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight">
             Welcome back, {profile.fullName}
           </h1>
-          <p className="text-xs text-slate-300">
-            Thank you for being part of the voluntary blood donation network.
+          <p className="text-xs sm:text-sm text-[#667085]">
+            Thank you for being part of the verified regional blood donation network.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <Link to="/profile" className="w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
-              className="w-full bg-slate-800/80 text-white border-slate-700 hover:bg-slate-700"
+              className="w-full"
               leftIcon={<User className="w-3.5 h-3.5" />}
             >
               Edit Profile
@@ -94,19 +94,19 @@ export const DonorDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Active Opportunities Alert Banner */}
+      {/* 2. Active Opportunities Alert Card */}
       {activeOpportunities.length > 0 && (
-        <Card className="border-crimson-200 bg-gradient-to-r from-crimson-50/90 to-rose-50/70 p-5 shadow-xs">
+        <Card className="border-[#FFE4E8] bg-white p-5 shadow-card">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-crimson-600 animate-bounce" />
-                <span className="text-sm font-bold text-crimson-950">
+                <Sparkles className="w-5 h-5 text-[#D92D45]" />
+                <span className="text-sm font-bold text-[#1F2937]">
                   {activeOpportunities.length} Urgent Donation Opportunity Available
                 </span>
               </div>
-              <p className="text-xs text-slate-600 max-w-xl">
-                A hospital or patient in your area requires {profile.bloodGroup.replace('_', ' ')} blood. Review the details to confirm if you can help.
+              <p className="text-xs text-[#667085] max-w-xl">
+                A verified hospital care team in your region requires {profile.bloodGroup.replace('_', ' ')} blood. Review request details to indicate your availability.
               </p>
             </div>
 
@@ -115,7 +115,6 @@ export const DonorDashboardPage: React.FC = () => {
                 variant="primary"
                 size="sm"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="shadow-xs shadow-crimson-600/20"
               >
                 Review Opportunities
               </Button>
@@ -124,7 +123,7 @@ export const DonorDashboardPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Metrics Row */}
+      {/* 3. Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Blood Group"
@@ -140,7 +139,7 @@ export const DonorDashboardPage: React.FC = () => {
           subtitle={
             totalDonationsCount === 0
               ? 'Ready for first donation'
-              : `${totalDonationsCount * 3} potential lives impacted`
+              : `${totalDonationsCount * 3} potential lives supported`
           }
           icon={History}
           color="emerald"
@@ -152,14 +151,14 @@ export const DonorDashboardPage: React.FC = () => {
           subtitle={
             profile.lastDonationAt
               ? 'Standard whole blood collection'
-              : 'No previous donations on record'
+              : 'No prior records on file'
           }
           icon={HeartHandshake}
           color="blue"
         />
       </div>
 
-      {/* Main Grid: Eligibility & Profile Summary */}
+      {/* 4. Main Grid: Eligibility & Profile Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 space-y-6">
           <EligibilityCard eligibility={profile.eligibility} />

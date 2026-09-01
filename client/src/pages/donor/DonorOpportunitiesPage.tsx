@@ -53,31 +53,31 @@ export const DonorOpportunitiesPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-left">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Sparkles className="w-7 h-7 text-crimson-600" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight flex items-center gap-2">
+            <Sparkles className="w-7 h-7 text-[#D92D45]" />
             Donation Opportunities
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Clinical blood requests in your area where your blood group is a potential match.
+          <p className="mt-1 text-xs sm:text-sm text-[#667085]">
+            Verified hospital blood requests in your region compatible with your blood group.
           </p>
         </div>
       </div>
 
-      {/* Medical Disclaimer Banner */}
-      <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      {/* Screening Notice Banner */}
+      <div className="rounded-2xl border border-[#FEF3C7] bg-[#FFFBEB] p-4 text-xs text-[#78350F] flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-[#B45309] shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-amber-950">Basic Screening Notice: </span>
+          <span className="font-bold text-[#92400E]">Basic Screening Match: </span>
           Opportunities represent potential compatibility matches. Final donor eligibility and crossmatching are performed at the clinical collection facility before donation.
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="flex items-center gap-2 border-b border-[#E7E5E4] pb-3 overflow-x-auto">
         {(['ACTIVE', 'ACCEPTED', 'PAST', 'ALL'] as const).map((tab) => (
           <button
             key={tab}
@@ -85,10 +85,10 @@ export const DonorOpportunitiesPage: React.FC = () => {
               setFilterTab(tab);
               setPage(1);
             }}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer select-none whitespace-nowrap ${
               filterTab === tab
-                ? 'bg-crimson-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-[#D92D45] text-white shadow-xs'
+                : 'text-[#667085] hover:bg-[#FAF9F7] hover:text-[#1F2937]'
             }`}
           >
             {tab === 'ACTIVE' && 'Active Opportunities'}
@@ -121,7 +121,7 @@ export const DonorOpportunitiesPage: React.FC = () => {
                 ? 'No active opportunities right now'
                 : 'No opportunities found in this category'
             }
-            description="When a local hospital or clinic needs blood matching your type, outreach alerts will appear here."
+            description="When a regional hospital or clinic submits a compatible blood request, outreach notifications will appear here."
           />
         </Card>
       ) : (
@@ -133,7 +133,7 @@ export const DonorOpportunitiesPage: React.FC = () => {
             return (
               <Card
                 key={opp.id}
-                className="p-5 hover:border-slate-300 transition-all group"
+                className="p-5 hover:border-[#D6D3D1] transition-all group"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* Left: Info */}
@@ -142,44 +142,43 @@ export const DonorOpportunitiesPage: React.FC = () => {
                       <BloodGroupBadge bloodGroup={req.bloodGroup} />
                       <RequestUrgencyBadge urgency={req.urgency} />
                       <OpportunityStatusBadge status={opp.status} />
-                      <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                      <span className="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F7] text-[#667085] border border-[#E7E5E4] font-mono">
                         Match Score: {opp.matchScore}%
                       </span>
                     </div>
 
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 group-hover:text-crimson-600 transition-colors">
+                      <h3 className="text-base font-bold text-[#1F2937] group-hover:text-[#D92D45] transition-colors">
                         {req.hospitalName}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-[#667085] mt-1">
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <MapPin className="w-3.5 h-3.5 text-[#9CA3AF]" />
                           {req.location}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <Calendar className="w-3.5 h-3.5 text-[#9CA3AF]" />
                           Needed by {formatDate(req.requiredBy)}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <Clock className="w-3.5 h-3.5 text-[#9CA3AF]" />
                           Sent {formatDate(opp.createdAt)}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 max-w-2xl">
+                    <p className="text-xs text-[#667085] bg-[#FAF9F7] p-2.5 rounded-xl border border-[#E7E5E4] max-w-2xl">
                       {opp.matchReason}
                     </p>
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex items-center justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <div className="flex items-center justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-[#E7E5E4]/80">
                     <Link to={`/dashboard/opportunities/${opp.id}`}>
                       <Button
                         variant={isPendingOrViewed ? 'primary' : 'outline'}
                         size="sm"
                         rightIcon={<ArrowRight className="w-4 h-4" />}
-                        className={isPendingOrViewed ? 'shadow-xs shadow-crimson-600/20' : ''}
                       >
                         {isPendingOrViewed ? 'Review Opportunity' : 'View Details'}
                       </Button>

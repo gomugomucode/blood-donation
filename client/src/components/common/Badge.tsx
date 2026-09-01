@@ -19,13 +19,13 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
 }) => {
   const variants = {
-    neutral: 'bg-slate-100 text-slate-700 border-slate-200/80',
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-200/80 font-medium',
-    warning: 'bg-amber-50 text-amber-900 border-amber-200/80 font-medium',
-    danger: 'bg-red-50 text-red-800 border-red-200/80 font-medium',
-    crimson: 'bg-rose-50 text-rose-800 border-rose-200/80 font-semibold',
-    info: 'bg-blue-50 text-blue-800 border-blue-200/80 font-medium',
-    purple: 'bg-indigo-50 text-indigo-800 border-indigo-200/80 font-medium',
+    neutral: 'bg-[#FAF9F7] text-[#667085] border-[#E7E5E4]',
+    success: 'bg-[#F0FDF4] text-[#15803D] border-[#DCFCE7] font-medium',
+    warning: 'bg-[#FFFBEB] text-[#B45309] border-[#FEF3C7] font-medium',
+    danger: 'bg-[#FEF2F2] text-[#B42318] border-[#FEE2E2] font-medium',
+    crimson: 'bg-[#FFF0F2] text-[#D92D45] border-[#FFE4E8] font-semibold',
+    info: 'bg-[#EFF6FF] text-[#1D4ED8] border-[#DBEAFE] font-medium',
+    purple: 'bg-[#FAF5FF] text-[#7E22CE] border-[#F3E8FF] font-medium',
   };
 
   const sizes = {
@@ -61,7 +61,7 @@ export const BloodGroupBadge: React.FC<{ bloodGroup?: BloodGroup | string | null
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-lg bg-rose-50 text-rose-800 border border-rose-200/90 shadow-2xs font-mono select-none',
+        'inline-flex items-center justify-center rounded-lg bg-[#FFF0F2] text-[#D92D45] border border-[#FFE4E8] shadow-2xs font-mono select-none',
         sizeStyles[size],
         className
       )}
@@ -77,13 +77,13 @@ export const EligibilityBadge: React.FC<{ isEligible: boolean; className?: strin
 }) => {
   return isEligible ? (
     <Badge variant="success" className={className}>
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-0.5 animate-pulse" />
-      Eligible
+      <span className="w-1.5 h-1.5 rounded-full bg-[#15803D] mr-0.5" />
+      Basic Eligibility Confirmed
     </Badge>
   ) : (
     <Badge variant="warning" className={className}>
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-0.5" />
-      Not Eligible
+      <span className="w-1.5 h-1.5 rounded-full bg-[#B45309] mr-0.5" />
+      Cadence Cooldown Active
     </Badge>
   );
 };
@@ -97,11 +97,11 @@ export const RequestUrgencyBadge: React.FC<{ urgency: RequestUrgency; className?
       return (
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-red-100 text-red-900 border border-red-300 shadow-xs animate-pulse-subtle',
+            'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-[#FEF2F2] text-[#B42318] border border-[#FEE2E2] shadow-xs',
             className
           )}
         >
-          <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+          <AlertCircle className="w-3.5 h-3.5 text-[#B42318] shrink-0" />
           CRITICAL URGENCY
         </span>
       );
@@ -109,19 +109,19 @@ export const RequestUrgencyBadge: React.FC<{ urgency: RequestUrgency; className?
       return (
         <span
           className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-100 text-amber-900 border border-amber-300 shadow-xs',
+            'inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#FFFBEB] text-[#B45309] border border-[#FEF3C7] shadow-xs',
             className
           )}
         >
-          <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          HIGH
+          <AlertCircle className="w-3.5 h-3.5 text-[#B45309] shrink-0" />
+          HIGH PRIORITY
         </span>
       );
     case 'NORMAL':
       return (
         <span
           className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-lg bg-blue-50 text-blue-800 border border-blue-200/90',
+            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-lg bg-[#EFF6FF] text-[#1D4ED8] border border-[#DBEAFE]',
             className
           )}
         >
@@ -133,7 +133,7 @@ export const RequestUrgencyBadge: React.FC<{ urgency: RequestUrgency; className?
       return (
         <span
           className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 border border-slate-200/90',
+            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-lg bg-[#FAF9F7] text-[#667085] border border-[#E7E5E4]',
             className
           )}
         >

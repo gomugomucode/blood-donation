@@ -25,47 +25,47 @@ export const StatCard: React.FC<StatCardProps> = ({
   className,
 }) => {
   const colorMap = {
-    crimson: 'bg-rose-50 text-rose-700 border-rose-100 shadow-rose-500/5',
-    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-emerald-500/5',
-    blue: 'bg-blue-50 text-blue-700 border-blue-100 shadow-blue-500/5',
-    amber: 'bg-amber-50 text-amber-800 border-amber-100 shadow-amber-500/5',
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100 shadow-indigo-500/5',
+    crimson: 'bg-[#FFF0F2] text-[#D92D45] border-[#FFE4E8]',
+    emerald: 'bg-[#F0FDF4] text-[#15803D] border-[#DCFCE7]',
+    blue: 'bg-[#EFF6FF] text-[#1D4ED8] border-[#DBEAFE]',
+    amber: 'bg-[#FFFBEB] text-[#B45309] border-[#FEF3C7]',
+    indigo: 'bg-[#FAF5FF] text-[#7E22CE] border-[#F3E8FF]',
   };
 
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl p-5 border border-slate-200/80 shadow-card hover:shadow-card-hover transition-all duration-200 flex items-start justify-between gap-4',
+        'bg-white rounded-2xl p-5 border border-[#E7E5E4] shadow-card hover:shadow-card-hover transition-all duration-200 flex items-start justify-between gap-4',
         className
       )}
     >
       <div className="space-y-1 min-w-0">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+        <p className="text-xs font-semibold text-[#667085] uppercase tracking-wider truncate">
           {title}
         </p>
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-mono tabular-nums">
+        <div className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight font-mono tabular-nums">
           {value}
         </div>
         <div className="flex items-center gap-2 pt-0.5">
           {trend && (
             <span
               className={cn(
-                'text-xs font-semibold px-1.5 py-0.5 rounded-md font-mono',
-                trend.isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                'text-xs font-semibold px-2 py-0.5 rounded-md font-mono',
+                trend.isPositive ? 'bg-[#F0FDF4] text-[#15803D]' : 'bg-[#FFF0F2] text-[#D92D45]'
               )}
             >
               {trend.value}
             </span>
           )}
           {subtitle && (
-            <p className="text-xs text-slate-500 font-medium truncate">{subtitle}</p>
+            <p className="text-xs text-[#667085] font-medium truncate">{subtitle}</p>
           )}
         </div>
       </div>
 
       <div
         className={cn(
-          'p-3.5 rounded-xl border flex items-center justify-center shrink-0 transition-transform duration-200 hover:scale-105',
+          'p-3.5 rounded-xl border flex items-center justify-center shrink-0 transition-transform duration-200',
           colorMap[color]
         )}
       >

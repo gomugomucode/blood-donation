@@ -56,7 +56,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-card flex justify-center items-center">
+      <div className="bg-white rounded-2xl p-12 border border-[#E7E5E4] shadow-card flex justify-center items-center">
         <LoadingSpinner size="lg" label="Loading opportunity details..." />
       </div>
     );
@@ -64,7 +64,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
 
   if (isError || !opportunity) {
     return (
-      <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-card">
+      <div className="bg-white rounded-2xl p-8 border border-[#E7E5E4] shadow-card">
         <ErrorState
           title="Opportunity not found"
           message={(error as Error)?.message || 'Unable to retrieve the requested donation opportunity.'}
@@ -118,12 +118,12 @@ export const DonorOpportunityDetailPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in text-left">
       {/* Back Link & Title */}
       <div>
         <Link
           to="/dashboard/opportunities"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#667085] hover:text-[#1F2937] transition-colors mb-3"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to All Opportunities
@@ -131,8 +131,8 @@ export const DonorOpportunityDetailPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <Sparkles className="w-7 h-7 text-rose-600 shrink-0" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight flex items-center gap-2.5">
+              <Sparkles className="w-7 h-7 text-[#D92D45] shrink-0" />
               Targeted Donation Opportunity
             </h1>
             <BloodGroupBadge bloodGroup={req.bloodGroup} size="lg" />
@@ -143,110 +143,110 @@ export const DonorOpportunityDetailPage: React.FC = () => {
       </div>
 
       {/* Medical Screening Disclaimer */}
-      <div className="rounded-2xl border border-amber-200/90 bg-amber-50/80 p-4 text-xs text-amber-950 flex items-start gap-3 shadow-2xs leading-relaxed">
-        <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="rounded-2xl border border-[#FEF3C7] bg-[#FFFBEB] p-4 text-xs text-[#78350F] flex items-start gap-3 shadow-2xs leading-relaxed">
+        <ShieldCheck className="w-5 h-5 text-[#B45309] shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold text-amber-950">Basic Screening Notice: </span>
+          <span className="font-bold text-[#92400E]">Basic Screening Notice: </span>
           This outreach alert is generated from algorithmic compatibility (ABO/Rh match and donation interval). Full medical screening and crossmatching occur on-site prior to blood collection.
         </div>
       </div>
 
       {errorMessage && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] p-4 text-xs font-semibold text-[#B42318] flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-[#B42318] shrink-0 mt-0.5" />
           <div>{errorMessage}</div>
         </div>
       )}
 
       {/* Opportunity Status Hero Banner */}
       {isAccepted && (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/90 p-6 text-emerald-950 space-y-2 shadow-xs">
-          <div className="flex items-center gap-2 font-extrabold text-emerald-950 text-base sm:text-lg">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+        <div className="rounded-2xl border border-[#DCFCE7] bg-[#F0FDF4] p-6 text-[#14532D] space-y-2 shadow-xs">
+          <div className="flex items-center gap-2 font-extrabold text-[#14532D] text-base sm:text-lg">
+            <CheckCircle2 className="w-6 h-6 text-[#15803D] shrink-0" />
             Thank you! You have confirmed your availability to donate.
           </div>
-          <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed max-w-2xl">
+          <p className="text-xs sm:text-sm text-[#166534] leading-relaxed max-w-2xl">
             The hospital coordination staff has been notified. They will contact you shortly regarding collection guidelines and arrival directions at <strong>{req.hospitalName}</strong>.
           </p>
         </div>
       )}
 
       {isFulfilled && (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/90 p-6 text-emerald-950 space-y-1 shadow-xs">
-          <div className="flex items-center gap-2 font-extrabold text-emerald-950 text-base sm:text-lg">
-            <Heart className="w-6 h-6 text-rose-600 fill-rose-600 shrink-0" />
+        <div className="rounded-2xl border border-[#DCFCE7] bg-[#F0FDF4] p-6 text-[#14532D] space-y-1 shadow-xs">
+          <div className="flex items-center gap-2 font-extrabold text-[#14532D] text-base sm:text-lg">
+            <Heart className="w-6 h-6 text-[#D92D45] fill-[#D92D45] shrink-0" />
             Donation Procedure Completed & Recorded!
           </div>
-          <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#166534] leading-relaxed">
             Your verified blood donation for this request is officially recorded. Thank you for your voluntary commitment!
           </p>
         </div>
       )}
 
       {isDeclined && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-100 p-4 text-slate-700 text-xs flex items-center gap-2.5">
-          <XCircle className="w-5 h-5 text-slate-500 shrink-0" />
+        <div className="rounded-2xl border border-[#E7E5E4] bg-[#FAF9F7] p-4 text-[#667085] text-xs flex items-center gap-2.5">
+          <XCircle className="w-5 h-5 text-[#9CA3AF] shrink-0" />
           You declined this opportunity ({opportunity.declineReason || 'Not available'}). We will notify you when other opportunities arise.
         </div>
       )}
 
       {isExpired && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 text-xs flex items-center gap-2.5">
-          <Clock className="w-5 h-5 text-red-500 shrink-0" />
+        <div className="rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] p-4 text-[#B42318] text-xs flex items-center gap-2.5">
+          <Clock className="w-5 h-5 text-[#B42318] shrink-0" />
           This donation opportunity has expired.
         </div>
       )}
 
       {isCancelled && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-100 p-4 text-slate-700 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-5 h-5 text-slate-500 shrink-0" />
+        <div className="rounded-2xl border border-[#E7E5E4] bg-[#FAF9F7] p-4 text-[#667085] text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-5 h-5 text-[#9CA3AF] shrink-0" />
           This request was cancelled by the clinical coordination center.
         </div>
       )}
 
       {/* Main Details Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-card space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#E7E5E4] shadow-card space-y-6">
         <div>
-          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          <h2 className="text-base font-bold text-[#1F2937] border-b border-[#E7E5E4]/80 pb-3">
             Facility & Transfusion Requirements
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 text-sm">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
                 Hospital / Facility
               </span>
-              <div className="font-bold text-slate-900 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="font-bold text-[#1F2937] flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#D92D45] shrink-0" />
                 {req.hospitalName}
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
                 Location / Region
               </span>
-              <div className="font-bold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="font-bold text-[#1F2937] flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#D92D45] shrink-0" />
                 {req.location}
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
                 Needed By Deadline
               </span>
-              <div className="font-bold text-slate-900 flex items-center gap-2 font-mono">
-                <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
+              <div className="font-bold text-[#1F2937] flex items-center gap-2 font-mono">
+                <Calendar className="w-4 h-4 text-[#9CA3AF] shrink-0" />
                 {formatDate(req.requiredBy)}
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
                 Match Compatibility
               </span>
-              <div className="font-bold text-slate-900 flex items-center gap-2 font-mono">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <div className="font-bold text-[#1F2937] flex items-center gap-2 font-mono">
+                <Sparkles className="w-4 h-4 text-[#B45309] shrink-0" />
                 Score: {opportunity.matchScore} / 100
               </div>
             </div>
@@ -254,19 +254,19 @@ export const DonorOpportunityDetailPage: React.FC = () => {
         </div>
 
         {/* Screening Explanation Card */}
-        <div className="rounded-2xl bg-slate-50 p-4 sm:p-5 border border-slate-200/80 space-y-1.5">
-          <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <HelpCircle className="w-4 h-4 text-slate-500" />
+        <div className="rounded-2xl bg-[#FAF9F7] p-4 sm:p-5 border border-[#E7E5E4] space-y-1.5">
+          <div className="text-xs font-bold text-[#1F2937] uppercase tracking-wider flex items-center gap-1.5">
+            <HelpCircle className="w-4 h-4 text-[#667085]" />
             Basic Screening & Ranking Criteria
           </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-[#667085] leading-relaxed">
             {opportunity.matchReason}
           </p>
         </div>
 
         {/* Action Buttons */}
         {isActionable && (
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-3">
+          <div className="pt-4 border-t border-[#E7E5E4]/80 flex flex-col sm:flex-row items-center justify-end gap-3">
             <Button
               variant="outline"
               onClick={() => setIsDeclineModalOpen(true)}
@@ -276,7 +276,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
             </Button>
 
             <Button
-              variant="critical"
+              variant="primary"
               size="lg"
               onClick={() => setIsAcceptModalOpen(true)}
               className="w-full sm:w-auto"
@@ -295,11 +295,11 @@ export const DonorOpportunityDetailPage: React.FC = () => {
         title="Confirm Availability to Donate"
         description="Please confirm your intention to assist with this blood request."
       >
-        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-          <div className="p-3.5 bg-rose-50/70 border border-rose-200/80 rounded-2xl flex items-start gap-2.5 text-rose-950">
-            <Info className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+        <div className="space-y-4 text-xs text-[#667085] leading-relaxed text-left">
+          <div className="p-3.5 bg-[#FFF0F2] border border-[#FFE4E8] rounded-2xl flex items-start gap-2.5 text-[#8F1D35]">
+            <Info className="w-4 h-4 text-[#D92D45] shrink-0 mt-0.5" />
             <div>
-              <strong>Before you continue:</strong> Your current basic donation eligibility will be verified again upon acceptance. Accepting this opportunity does not record a donation until collection is completed on-site by authorized medical staff.
+              <strong>Before you continue:</strong> Your current basic donation eligibility will be verified again upon acceptance. Accepting this opportunity does not record a donation until collection is completed on-site by authorized clinical staff.
             </div>
           </div>
 
@@ -307,7 +307,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
             By confirming availability, you grant permission for the hospital coordinator at <strong>{req.hospitalName}</strong> to reach out to coordinate your donation appointment.
           </p>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E7E5E4]">
             <Button
               type="button"
               variant="outline"
@@ -317,7 +317,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
             </Button>
             <Button
               type="button"
-              variant="critical"
+              variant="primary"
               isLoading={acceptMutation.isPending}
               onClick={handleConfirmAccept}
             >
@@ -334,7 +334,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
         title="Decline Opportunity"
         description="Let the coordinators know why you cannot donate for this request (optional)."
       >
-        <form onSubmit={handleDeclineSubmit} className="space-y-4">
+        <form onSubmit={handleDeclineSubmit} className="space-y-4 text-left">
           <div>
             <Select
               label="Reason for Declining"
@@ -345,11 +345,11 @@ export const DonorOpportunityDetailPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-[#1F2937] uppercase tracking-wider mb-1">
               Optional Note (Non-sensitive)
             </label>
             <textarea
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+              className="w-full rounded-xl border border-[#E7E5E4] bg-white p-3 text-xs text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#D92D45]/20 focus:border-[#D92D45]"
               rows={3}
               placeholder="e.g. Traveling until next week"
               value={declineNotes}
@@ -357,7 +357,7 @@ export const DonorOpportunityDetailPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E7E5E4]">
             <Button
               type="button"
               variant="outline"
