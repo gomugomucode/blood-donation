@@ -379,76 +379,103 @@ export class OpportunityService {
    * CRITICAL SAFEGUARD: Rechecks fresh basic eligibility at response time!
    */
   public async acceptOpportunity(donorId: string, opportunityId: string): Promise<any> {
-    const opportunity = await prisma.donorOpportunity.findUnique({
-      where: { id: opportunityId },
-      include: {
-        bloodRequest: true,
-        donor: true,
-      },
-    });
+    const execute = async () => {
+      return await prisma.$transaction(
+        async (tx) => {
+          const opportunity = await tx.donorOpportunity.findUnique({
+            where: { id: opportunityId },
+            include: {
+              bloodRequest: true,
+              donor: true,
+            },
+          });
 
-    if (!opportunity) {
-      throw new NotFoundError('Donation opportunity not found.');
-    }
+          if (!opportunity) {
+            throw new NotFoundError('Donation opportunity not found.');
+          }
 
-    if (opportunity.donorId !== donorId) {
-      throw new ForbiddenError('You do not have permission to accept this opportunity.');
-    }
+          if (opportunity.donorId !== donorId) {
+            throw new ForbiddenError('You do not have permission to accept this opportunity.');
+          }
 
-    if (opportunity.status === OpportunityStatus.ACCEPTED) {
-      return opportunity; // Idempotent
-    }
+          if (opportunity.status === OpportunityStatus.ACCEPTED) {
+            return opportunity; // Idempotent
+          }
 
-    if (
-      opportunity.status === OpportunityStatus.DECLINED ||
-      opportunity.status === OpportunityStatus.CANCELLED ||
-      opportunity.status === OpportunityStatus.FULFILLED
-    ) {
-      throw new BadRequestError(
-        `Cannot accept an opportunity with status "${opportunity.status}".`
+          if (
+            opportunity.status === OpportunityStatus.DECLINED ||
+            opportunity.status === OpportunityStatus.CANCELLED ||
+            opportunity.status === OpportunityStatus.FULFILLED
+          ) {
+            throw new BadRequestError(
+              `Cannot accept an opportunity with status "${opportunity.status}".`
+            );
+          }
+
+          // Check expiration
+          if (new Date(opportunity.expiresAt) < new Date()) {
+            await tx.donorOpportunity.update({
+              where: { id: opportunityId },
+              data: { status: OpportunityStatus.EXPIRED },
+            });
+            throw new BadRequestError('This donation opportunity has expired and can no longer be accepted.');
+          }
+
+          // Check blood request status
+          if (
+            opportunity.bloodRequest.status === 'CANCELLED' ||
+            opportunity.bloodRequest.status === 'EXPIRED' ||
+            opportunity.bloodRequest.status === 'FULFILLED'
+          ) {
+            throw new BadRequestError(
+              `The associated blood request is currently ${opportunity.bloodRequest.status.toLowerCase()}.`
+            );
+          }
+
+          // FRESH BASIC ELIGIBILITY RECHECK
+          const eligibility = eligibilityService.evaluate({
+            dateOfBirth: opportunity.donor.dateOfBirth,
+            lastDonationAt: opportunity.donor.lastDonationAt,
+            deletedAt: opportunity.donor.deletedAt,
+          });
+
+          if (!eligibility.isEligible) {
+            throw new BadRequestError(
+              `Basic screening re-check failed: ${eligibility.reason}. You are currently not eligible to accept.`
+            );
+          }
+
+          const res = await tx.donorOpportunity.update({
+            where: { id: opportunityId },
+            data: {
+              status: OpportunityStatus.ACCEPTED,
+              respondedAt: new Date(),
+            },
+          });
+
+          return res;
+        },
+        {
+          isolationLevel: 'Serializable',
+        }
       );
+    };
+
+    let updated: any;
+    try {
+      updated = await execute();
+    } catch (err: any) {
+      if (
+        err.code === 'P2034' ||
+        err.message?.includes('could not serialize access') ||
+        err.message?.includes('write conflict')
+      ) {
+        // Retry once to safely read freshly committed state or return idempotent response
+        updated = await execute();
+      } else {
+        throw err;
+      }
     }
-
-    // Check expiration
-    if (new Date(opportunity.expiresAt) < new Date()) {
-      await prisma.donorOpportunity.update({
-        where: { id: opportunityId },
-        data: { status: OpportunityStatus.EXPIRED },
-      });
-      throw new BadRequestError('This donation opportunity has expired and can no longer be accepted.');
-    }
-
-    // Check blood request status
-    if (
-      opportunity.bloodRequest.status === 'CANCELLED' ||
-      opportunity.bloodRequest.status === 'EXPIRED' ||
-      opportunity.bloodRequest.status === 'FULFILLED'
-    ) {
-      throw new BadRequestError(
-        `The associated blood request is currently ${opportunity.bloodRequest.status.toLowerCase()}.`
-      );
-    }
-
-    // FRESH BASIC ELIGIBILITY RECHECK
-    const eligibility = eligibilityService.evaluate({
-      dateOfBirth: opportunity.donor.dateOfBirth,
-      lastDonationAt: opportunity.donor.lastDonationAt,
-      deletedAt: opportunity.donor.deletedAt,
-    });
-
-    if (!eligibility.isEligible) {
-      throw new BadRequestError(
-        `Basic screening re-check failed: ${eligibility.reason}. You are currently not eligible to accept.`
-      );
-    }
-
-    const updated = await prisma.donorOpportunity.update({
-      where: { id: opportunityId },
-      data: {
-        status: OpportunityStatus.ACCEPTED,
-        respondedAt: new Date(),
-      },
-    });
 
     await auditService.log({
       action: 'OPPORTUNITY_ACCEPTED',
@@ -456,7 +483,7 @@ export class OpportunityService {
       targetId: opportunityId,
       metadata: {
         donorId,
-        bloodRequestId: opportunity.bloodRequestId,
+        bloodRequestId: updated.bloodRequestId,
       },
     });
 
@@ -612,27 +639,36 @@ export class OpportunityService {
     adminUserId?: string,
     reason?: string
   ): Promise<any> {
-    const opportunity = await prisma.donorOpportunity.findUnique({
-      where: { id: opportunityId },
-    });
+    const updated = await prisma.$transaction(
+      async (tx) => {
+        const opportunity = await tx.donorOpportunity.findUnique({
+          where: { id: opportunityId },
+        });
 
-    if (!opportunity) {
-      throw new NotFoundError('Donation opportunity not found.');
-    }
+        if (!opportunity) {
+          throw new NotFoundError('Donation opportunity not found.');
+        }
 
-    if (
-      opportunity.status === OpportunityStatus.FULFILLED ||
-      opportunity.status === OpportunityStatus.CANCELLED
-    ) {
-      throw new BadRequestError(`Cannot cancel an opportunity with status "${opportunity.status}".`);
-    }
+        if (
+          opportunity.status === OpportunityStatus.FULFILLED ||
+          opportunity.status === OpportunityStatus.CANCELLED
+        ) {
+          throw new BadRequestError(`Cannot cancel an opportunity with status "${opportunity.status}".`);
+        }
 
-    const updated = await prisma.donorOpportunity.update({
-      where: { id: opportunityId },
-      data: {
-        status: OpportunityStatus.CANCELLED,
+        const res = await tx.donorOpportunity.update({
+          where: { id: opportunityId },
+          data: {
+            status: OpportunityStatus.CANCELLED,
+          },
+        });
+
+        return res;
       },
-    });
+      {
+        isolationLevel: 'Serializable',
+      }
+    );
 
     await auditService.log({
       actorUserId: adminUserId,
@@ -640,8 +676,8 @@ export class OpportunityService {
       targetType: 'DonorOpportunity',
       targetId: opportunityId,
       metadata: {
-        donorId: opportunity.donorId,
-        bloodRequestId: opportunity.bloodRequestId,
+        donorId: updated.donorId,
+        bloodRequestId: updated.bloodRequestId,
         reason,
       },
     });

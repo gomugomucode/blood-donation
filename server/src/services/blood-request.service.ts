@@ -233,28 +233,48 @@ export class BloodRequestService {
   }
 
   /**
-   * Cancels an active blood request.
+   * Cancels an active blood request and cascades cancellation to active opportunities.
    */
   public async cancelBloodRequest(id: string, actorUserId?: string, reason?: string) {
-    const existing = await prisma.bloodRequest.findUnique({ where: { id } });
-    if (!existing) {
-      throw new NotFoundError(`Blood request with ID ${id} was not found.`);
-    }
+    const cancelled = await prisma.$transaction(
+      async (tx) => {
+        const req = await tx.bloodRequest.findUnique({ where: { id } });
+        if (!req) {
+          throw new NotFoundError(`Blood request with ID ${id} was not found.`);
+        }
 
-    if (existing.status === RequestStatus.CANCELLED) {
-      return existing; // Already cancelled
-    }
-    if (existing.status === RequestStatus.FULFILLED) {
-      throw new BadRequestError('Cannot cancel a request that has already been fulfilled.');
-    }
+        if (req.status === RequestStatus.CANCELLED) {
+          return req; // Already cancelled
+        }
+        if (req.status === RequestStatus.FULFILLED) {
+          throw new BadRequestError('Cannot cancel a request that has already been fulfilled.');
+        }
 
-    const cancelled = await prisma.bloodRequest.update({
-      where: { id },
-      data: {
-        status: RequestStatus.CANCELLED,
-        closedAt: new Date(),
+        const res = await tx.bloodRequest.update({
+          where: { id },
+          data: {
+            status: RequestStatus.CANCELLED,
+            closedAt: new Date(),
+          },
+        });
+
+        // Cancel any pending or viewed opportunities for this request
+        await tx.donorOpportunity.updateMany({
+          where: {
+            bloodRequestId: id,
+            status: { in: ['PENDING', 'VIEWED'] },
+          },
+          data: {
+            status: 'CANCELLED',
+          },
+        });
+
+        return res;
       },
-    });
+      {
+        isolationLevel: 'Serializable',
+      }
+    );
 
     await auditService.log({
       actorUserId,

@@ -356,71 +356,94 @@ export class AdminService {
 
     const donationDate = input.donatedAt || new Date();
 
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Donation Record
-      const donation = await tx.donation.create({
-        data: {
-          donorId,
-          bloodRequestId: input.bloodRequestId || null,
-          location: input.location,
-          notes: input.notes,
-          donatedAt: donationDate,
+    const execute = async () => {
+      return await prisma.$transaction(
+        async (tx) => {
+          // 1. Create Donation Record
+          const donation = await tx.donation.create({
+            data: {
+              donorId,
+              bloodRequestId: input.bloodRequestId || null,
+              location: input.location,
+              notes: input.notes,
+              donatedAt: donationDate,
+            },
+          });
+
+          // 2. Update donor's lastDonationAt if newer or currently null
+          if (!donor.lastDonationAt || donationDate > donor.lastDonationAt) {
+            await tx.donorProfile.update({
+              where: { id: donorId },
+              data: { lastDonationAt: donationDate },
+            });
+          }
+
+          // 3. Atomically update BloodRequest fulfillment and status if linked
+          if (input.bloodRequestId) {
+            const txRequest = await tx.bloodRequest.findUnique({
+              where: { id: input.bloodRequestId },
+            });
+
+            if (!txRequest) {
+              throw new NotFoundError(`Blood request with ID ${input.bloodRequestId} was not found.`);
+            }
+
+            if (txRequest.status === 'CANCELLED' || txRequest.status === 'EXPIRED') {
+              throw new BadRequestError(`Cannot record a donation against a ${txRequest.status.toLowerCase()} blood request.`);
+            }
+
+            if (txRequest.unitsFulfilled >= txRequest.unitsRequired) {
+              throw new BadRequestError('Blood request is already fully fulfilled.');
+            }
+
+            const newUnitsFulfilled = txRequest.unitsFulfilled + 1;
+            const isFullyFulfilled = newUnitsFulfilled >= txRequest.unitsRequired;
+
+            await tx.bloodRequest.update({
+              where: { id: txRequest.id },
+              data: {
+                unitsFulfilled: newUnitsFulfilled,
+                status: isFullyFulfilled ? 'FULFILLED' : 'PARTIALLY_FULFILLED',
+                closedAt: isFullyFulfilled ? new Date() : undefined,
+              },
+            });
+
+            // 4. Transition donor's opportunity for this request to FULFILLED
+            await tx.donorOpportunity.updateMany({
+              where: {
+                donorId,
+                bloodRequestId: txRequest.id,
+                status: { in: ['ACCEPTED', 'PENDING', 'VIEWED'] },
+              },
+              data: {
+                status: 'FULFILLED',
+              },
+            });
+          }
+
+          return donation;
         },
-      });
+        {
+          isolationLevel: 'Serializable',
+        }
+      );
+    };
 
-      // 2. Update donor's lastDonationAt if newer or currently null
-      if (!donor.lastDonationAt || donationDate > donor.lastDonationAt) {
-        await tx.donorProfile.update({
-          where: { id: donorId },
-          data: { lastDonationAt: donationDate },
-        });
+    let result: any;
+    try {
+      result = await execute();
+    } catch (err: any) {
+      if (
+        err.code === 'P2034' ||
+        err.message?.includes('could not serialize access') ||
+        err.message?.includes('write conflict')
+      ) {
+        // Retry once to read committed state
+        result = await execute();
+      } else {
+        throw err;
       }
-
-      // 3. Atomically update BloodRequest fulfillment and status if linked
-      if (input.bloodRequestId) {
-        const txRequest = await tx.bloodRequest.findUnique({
-          where: { id: input.bloodRequestId },
-        });
-
-        if (!txRequest) {
-          throw new NotFoundError(`Blood request with ID ${input.bloodRequestId} was not found.`);
-        }
-
-        if (txRequest.status === 'CANCELLED' || txRequest.status === 'EXPIRED') {
-          throw new BadRequestError(`Cannot record a donation against a ${txRequest.status.toLowerCase()} blood request.`);
-        }
-
-        if (txRequest.unitsFulfilled >= txRequest.unitsRequired) {
-          throw new BadRequestError('Blood request is already fully fulfilled.');
-        }
-
-        const newUnitsFulfilled = txRequest.unitsFulfilled + 1;
-        const isFullyFulfilled = newUnitsFulfilled >= txRequest.unitsRequired;
-
-        await tx.bloodRequest.update({
-          where: { id: txRequest.id },
-          data: {
-            unitsFulfilled: newUnitsFulfilled,
-            status: isFullyFulfilled ? 'FULFILLED' : 'PARTIALLY_FULFILLED',
-            closedAt: isFullyFulfilled ? new Date() : undefined,
-          },
-        });
-
-        // 4. Transition donor's opportunity for this request to FULFILLED
-        await tx.donorOpportunity.updateMany({
-          where: {
-            donorId,
-            bloodRequestId: txRequest.id,
-            status: { in: ['ACCEPTED', 'PENDING', 'VIEWED'] },
-          },
-          data: {
-            status: 'FULFILLED',
-          },
-        });
-      }
-
-      return donation;
-    });
+    }
 
     // 4. Audit Logging
     await auditService.log({

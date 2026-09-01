@@ -46,6 +46,13 @@ export const errorHandler = (
       sendError(res, 'Related record dependency failed.', 400);
       return;
     }
+
+    // Transaction serialization conflict / write conflict (P2034)
+    if (err.code === 'P2034') {
+      logger.warn('Prisma transaction write conflict / serialization deadlock', { requestId: req.id });
+      sendError(res, 'The operation could not be completed due to a concurrent conflict. Please retry.', 409);
+      return;
+    }
   }
 
   // 3. Log unexpected internal errors server-side (with privacy sanitizer and requestId)

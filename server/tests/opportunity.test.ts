@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/config/db.js';
 import { authService } from '../src/services/auth.service.js';
-import { BloodGroup, Role, RequestUrgency, NotificationChannel } from '../src/types/index.js';
+import { BloodGroup, Role, RequestUrgency, NotificationChannel, OpportunityStatus } from '../src/types/index.js';
 import bcrypt from 'bcryptjs';
 
 describe('Phase 12: Donor Opportunities & Response Tracking', () => {
@@ -482,6 +482,82 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('fulfilled');
+    });
+
+    it('should reject accepting a DECLINED opportunity with HTTP 400', async () => {
+      const oppDeclined = await prisma.donorOpportunity.create({
+        data: {
+          donorId: donorAProfile.id,
+          bloodRequestId: testBloodRequest.id,
+          matchScore: 85,
+          matchReason: 'Compatible',
+          status: OpportunityStatus.DECLINED,
+          expiresAt: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/donor/opportunities/${oppDeclined.id}/accept`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Cannot accept an opportunity with status "DECLINED"');
+    });
+
+    it('should reject accepting a CANCELLED opportunity with HTTP 400', async () => {
+      const oppCancelled = await prisma.donorOpportunity.create({
+        data: {
+          donorId: donorAProfile.id,
+          bloodRequestId: testBloodRequest.id,
+          matchScore: 85,
+          matchReason: 'Compatible',
+          status: OpportunityStatus.CANCELLED,
+          expiresAt: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/donor/opportunities/${oppCancelled.id}/accept`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Cannot accept an opportunity with status "CANCELLED"');
+    });
+
+    it('should reject accepting an opportunity for a CANCELLED blood request with HTTP 400', async () => {
+      const cancelledReq = await prisma.bloodRequest.create({
+        data: {
+          createdById: adminUser.id,
+          bloodGroup: BloodGroup.O_POSITIVE,
+          unitsRequired: 1,
+          unitsFulfilled: 0,
+          status: 'CANCELLED',
+          urgency: RequestUrgency.NORMAL,
+          hospitalName: 'Clinic Cancelled',
+          location: 'Butwal',
+          contactName: 'Hospital Desk',
+          contactNumber: '+977-9800000000',
+          requiredBy: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const oppForCancelledReq = await prisma.donorOpportunity.create({
+        data: {
+          donorId: donorAProfile.id,
+          bloodRequestId: cancelledReq.id,
+          matchScore: 90,
+          matchReason: 'Compatible',
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/donor/opportunities/${oppForCancelledReq.id}/accept`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('cancelled');
     });
   });
 
