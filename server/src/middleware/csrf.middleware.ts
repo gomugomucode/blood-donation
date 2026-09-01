@@ -4,15 +4,57 @@ import { logger } from '../utils/logger.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-const DEFAULT_ALLOWED_ORIGINS = [
-  env.CLIENT_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5174',
-  'http://localhost:5000',
-  'http://127.0.0.1:5000',
-].filter(Boolean);
+/**
+ * Returns all normalized allowed origins, parsing comma-separated URLs and trimming trailing slashes.
+ */
+export const getAllowedOrigins = (): string[] => {
+  const configured = (env.CLIENT_URL || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const defaults = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'https://client-sigma-peach.vercel.app',
+    'https://client-sigma-peach.vercel.app'
+  ];
+
+  const unique = new Set<string>();
+  for (const item of [...configured, ...defaults]) {
+    try {
+      unique.add(new URL(item).origin);
+    } catch {
+      unique.add(item.replace(/\/+$/, ''));
+    }
+  }
+  return Array.from(unique);
+};
+
+/**
+ * Verifies if an incoming Origin or Referer header matches the allowed list.
+ */
+export const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // same-origin or curl/mobile
+  const allowed = getAllowedOrigins();
+  try {
+    const originUrl = new URL(origin).origin;
+    return allowed.some((allowedOrigin) => {
+      try {
+        return new URL(allowedOrigin).origin === originUrl;
+      } catch {
+        return allowedOrigin === originUrl;
+      }
+    });
+  } catch {
+    const cleaned = origin.replace(/\/+$/, '');
+    return allowed.includes(cleaned);
+  }
+};
 
 /**
  * Strict Origin / CSRF verification middleware for state-changing browser requests.
@@ -37,20 +79,13 @@ export const csrfProtection = (
 
   // If Origin header is present, validate it against allowed origins
   if (typeof origin === 'string') {
-    const isAllowed = DEFAULT_ALLOWED_ORIGINS.some((allowed) => {
-      try {
-        return new URL(origin).origin === new URL(allowed).origin;
-      } catch {
-        return origin === allowed;
-      }
-    });
-
-    if (!isAllowed) {
+    if (!isOriginAllowed(origin)) {
       logger.warn('Blocked request due to CSRF origin mismatch', {
         requestId: req.id,
         method: req.method,
         path: req.path,
         origin,
+        allowedOrigins: getAllowedOrigins(),
       });
 
       res.status(403).json({
@@ -65,20 +100,13 @@ export const csrfProtection = (
     }
   } else if (typeof referer === 'string' && env.NODE_ENV === 'production') {
     // In production, verify referer if origin is omitted
-    const isAllowedReferer = DEFAULT_ALLOWED_ORIGINS.some((allowed) => {
-      try {
-        return new URL(referer).origin === new URL(allowed).origin;
-      } catch {
-        return false;
-      }
-    });
-
-    if (!isAllowedReferer) {
+    if (!isOriginAllowed(referer)) {
       logger.warn('Blocked request due to CSRF referer mismatch', {
         requestId: req.id,
         method: req.method,
         path: req.path,
         referer,
+        allowedOrigins: getAllowedOrigins(),
       });
 
       res.status(403).json({

@@ -9,7 +9,8 @@ import { prisma } from './config/db.js';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { requestIdMiddleware } from './middleware/request-id.middleware.js';
-import { csrfProtection } from './middleware/csrf.middleware.js';
+import { csrfProtection, isOriginAllowed, getAllowedOrigins } from './middleware/csrf.middleware.js';
+import { logger } from './utils/logger.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -26,23 +27,16 @@ export const createApp = (): Express => {
   );
 
   // 3. Strict CORS Configuration
-  const allowedOrigins = [
-    env.CLIENT_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5174',
-    'http://localhost:5000',
-    'http://127.0.0.1:5000',
-  ].filter(Boolean);
-
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile, curl, or same-origin)
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (isOriginAllowed(origin)) {
           callback(null, true);
         } else {
+          logger.warn('Blocked request due to CORS origin mismatch', {
+            origin,
+            allowedOrigins: getAllowedOrigins(),
+          });
           callback(null, false);
         }
       },
