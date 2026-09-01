@@ -42,14 +42,27 @@ export const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) return true; // same-origin or curl/mobile
   const allowed = getAllowedOrigins();
   try {
-    const originUrl = new URL(origin).origin;
-    return allowed.some((allowedOrigin) => {
+    const parsed = new URL(origin);
+    const originUrl = parsed.origin;
+    const hostname = parsed.hostname;
+
+    // Check direct allowed origins
+    const isDirectMatch = allowed.some((allowedOrigin) => {
       try {
         return new URL(allowedOrigin).origin === originUrl;
       } catch {
         return allowedOrigin === originUrl;
       }
     });
+
+    if (isDirectMatch) return true;
+
+    // Allow *.vercel.app and *.onrender.com deployments
+    if (hostname.endsWith('.vercel.app') || hostname.endsWith('.onrender.com')) {
+      return true;
+    }
+
+    return false;
   } catch {
     const cleaned = origin.replace(/\/+$/, '');
     return allowed.includes(cleaned);
