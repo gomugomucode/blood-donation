@@ -9,8 +9,12 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting Blood Donation Database Seeding...');
 
-  // Clean existing data for deterministic seeding
+  // Clean existing data in dependency order for deterministic seeding
+  await prisma.notification.deleteMany();
   await prisma.donation.deleteMany();
+  await prisma.donorOpportunity.deleteMany();
+  await prisma.bloodRequest.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
   await prisma.donorProfile.deleteMany();
   await prisma.user.deleteMany();
 

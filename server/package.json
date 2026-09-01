@@ -13,6 +13,7 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:deploy": "npx prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed:admin": "tsx prisma/seed-admin.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",

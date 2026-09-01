@@ -18,6 +18,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "prisma:migrate": "npm run prisma:migrate --workspace=server",
     "prisma:seed": "npm run prisma:seed --workspace=server",
+    "prisma:seed:admin": "npm run prisma:seed:admin --workspace=server",
+    "seed:admin": "npm run prisma:seed:admin --workspace=server",
     "postinstall": "npm run prisma:generate --workspace=server --if-present || true"
   },
   "devDependencies": {
