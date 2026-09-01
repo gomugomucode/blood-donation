@@ -127,11 +127,13 @@ The system implements pure clinical red-cell compatibility rules:
 - **AB+ Recipient:** Receives from all 8 blood groups (Universal recipient).
 
 ### 100-Point Deterministic Candidate Ranking Algorithm
+> **Operational Note:** The ranking score is an operational prioritization mechanism, not a medical risk or suitability score. The matching engine does not provide clinical clearance or replace on-site screening and crossmatching.
+
 1. **Blood Group Compatibility (Max 40 points):**
    - Exact ABO/Rh match: `40 points`
    - Compatible alternative donor group: `30 points`
-2. **Eligibility & Interval Readiness (Max 25 points):**
-   - Immediate clinical eligibility (age 18–65, >=56 days since last donation): `25 points`
+2. **Basic Donation Eligibility Readiness (Max 25 points):**
+   - Basic screening pass (age 18–65, >=56 days since last donation): `25 points`
    - Ineligible or active cooldown (<56 days): `Excluded from candidate pool`
 3. **Location Proximity (Max 20 points):**
    - Donor city matches request hospital/regional location: `20 points`

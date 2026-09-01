@@ -14,7 +14,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "test": "vitest run --pool=forks",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
+    "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

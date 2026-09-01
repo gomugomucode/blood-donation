@@ -108,6 +108,19 @@ export class OpportunityService {
         continue;
       }
 
+      // Respect donor consent preferences
+      const preferences = (donorProfile.preferences as Record<string, any>) || {};
+      if (preferences.allowBloodRequestNotifications === false) {
+        skipped++;
+        continue;
+      }
+
+      const preferredChannel: NotificationChannel =
+        preferences.preferredNotificationChannel &&
+        Object.values(NotificationChannel).includes(preferences.preferredNotificationChannel)
+          ? preferences.preferredNotificationChannel
+          : NotificationChannel.IN_APP;
+
       // Snapshot match details
       const matchScore = candidate.matchScore;
       const matchReason = `${candidate.compatibilityType === 'EXACT' ? 'Exact match' : 'Compatible donor'} (${candidate.bloodGroup.replace('_', '+')}) in ${candidate.location}. Basic screening pass.`;
@@ -154,7 +167,7 @@ export class OpportunityService {
               data: {
                 userId: donorProfile.userId,
                 opportunityId: opp.id,
-                channel: NotificationChannel.IN_APP,
+                channel: preferredChannel,
                 type: NotificationType.OPPORTUNITY_ALERT,
                 status: 'SENT',
                 title: notifTitle,

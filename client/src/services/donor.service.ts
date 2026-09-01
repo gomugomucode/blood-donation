@@ -1,5 +1,11 @@
 import { api } from '../lib/api.js';
-import { ApiResponse, DonorProfile, Donation, EligibilityResult } from '../types/index.js';
+import {
+  ApiResponse,
+  DonorProfile,
+  Donation,
+  EligibilityResult,
+  DonorConsentPreferences,
+} from '../types/index.js';
 import { ProfileFormValues } from '../schemas/auth.schema.js';
 
 export const donorService = {
@@ -8,7 +14,11 @@ export const donorService = {
     return res.data.data!;
   },
 
-  async updateProfile(data: ProfileFormValues): Promise<DonorProfile> {
+  async updateProfile(
+    data: Partial<ProfileFormValues> & {
+      preferences?: DonorConsentPreferences | Record<string, any>;
+    }
+  ): Promise<DonorProfile> {
     const res = await api.patch<ApiResponse<DonorProfile>>('/donors/me', data);
     return res.data.data!;
   },

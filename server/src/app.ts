@@ -71,6 +71,18 @@ export const createApp = (): Express => {
     },
   });
 
+  const donorResponseLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isTest ? 10000 : 60, // 60 responses per 15 min per IP for opportunity/notification actions
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => isTest,
+    message: {
+      success: false,
+      message: 'Too many opportunity or notification response actions. Please slow down.',
+    },
+  });
+
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: isTest ? 10000 : 500, // 500 requests per 15 min per IP for general API
@@ -87,6 +99,19 @@ export const createApp = (): Express => {
   app.use('/api/v1/auth/register', authLimiter);
   app.use('/api/v1/auth/forgot-password', authLimiter);
   app.use('/api/v1/auth/reset-password', authLimiter);
+
+  // Dedicated donor response endpoints rate limiting (both plural and singular aliases)
+  app.use('/api/v1/donors/opportunities/:id/accept', donorResponseLimiter);
+  app.use('/api/v1/donor/opportunities/:id/accept', donorResponseLimiter);
+  app.use('/api/v1/donors/opportunities/:id/decline', donorResponseLimiter);
+  app.use('/api/v1/donor/opportunities/:id/decline', donorResponseLimiter);
+  app.use('/api/v1/donors/opportunities/:id/view', donorResponseLimiter);
+  app.use('/api/v1/donor/opportunities/:id/view', donorResponseLimiter);
+  app.use('/api/v1/donors/notifications/:id/read', donorResponseLimiter);
+  app.use('/api/v1/donor/notifications/:id/read', donorResponseLimiter);
+  app.use('/api/v1/donors/notifications/read-all', donorResponseLimiter);
+  app.use('/api/v1/donor/notifications/read-all', donorResponseLimiter);
+
   app.use('/api/v1', apiLimiter);
 
   // 6. General Middlewares

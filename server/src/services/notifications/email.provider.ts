@@ -22,14 +22,14 @@ export class EmailNotificationProvider {
       };
     }
 
-    // When configured with mock or in non-production
-    if (this.config.provider === 'mock' || env.NODE_ENV !== 'production') {
-      const mockId = `mock-email-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      logger.info(`[MOCK EMAIL DISPATCH] To: ${to} | Subject: ${payload.title}`, {
-        mockId,
-        userId: payload.userId,
-      });
-      return { externalId: mockId, status: NotificationStatus.SENT };
+    // Fail honestly if API credentials are not configured for production providers
+    if (this.config.provider === 'resend' || this.config.provider === 'sendgrid') {
+      if (!this.config.apiKey || this.config.apiKey.trim() === '') {
+        return {
+          status: NotificationStatus.FAILED,
+          error: `UNCONFIGURED_PROVIDER: Missing API key for email provider "${this.config.provider}".`,
+        };
+      }
     }
 
     try {

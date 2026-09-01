@@ -9,6 +9,7 @@ const router = Router();
 // Base API V1 routes
 router.use('/auth', authRoutes);
 router.use('/donors', donorRoutes);
+router.use('/donor', donorRoutes); // Phase 12 singular route alias
 router.use('/admin', adminRoutes);
 router.use('/admin/blood-requests', bloodRequestRoutes);
 

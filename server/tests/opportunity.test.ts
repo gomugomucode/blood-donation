@@ -3,19 +3,22 @@ import request from 'supertest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/config/db.js';
 import { authService } from '../src/services/auth.service.js';
-import { BloodGroup, Role, RequestUrgency } from '../src/types/index.js';
+import { BloodGroup, Role, RequestUrgency, NotificationChannel } from '../src/types/index.js';
 import bcrypt from 'bcryptjs';
 
 describe('Phase 12: Donor Opportunities & Response Tracking', () => {
   let adminCookie: string[] = [];
   let donorACookie: string[] = [];
   let donorBCookie: string[] = [];
+  let donorOptOutCookie: string[] = [];
 
   let adminUser: any;
   let donorAUser: any;
   let donorBUser: any;
+  let donorOptOutUser: any;
   let donorAProfile: any;
   let donorBProfile: any;
+  let donorOptOutProfile: any;
 
   let testBloodRequest: any;
 
@@ -40,7 +43,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       },
     });
 
-    // 2. Create Donor A (O_POSITIVE, eligible)
+    // 2. Create Donor A (O_POSITIVE, eligible, in-app channel)
     const dobA = new Date();
     dobA.setFullYear(dobA.getFullYear() - 25);
     donorAUser = await prisma.user.create({
@@ -59,10 +62,14 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
         contactNumber: '+977-9847111222',
         dateOfBirth: dobA,
         lastDonationAt: null,
+        preferences: {
+          allowBloodRequestNotifications: true,
+          preferredNotificationChannel: 'IN_APP',
+        },
       },
     });
 
-    // 3. Create Donor B (O_POSITIVE, eligible)
+    // 3. Create Donor B (O_POSITIVE, eligible, preferred channel: EMAIL)
     const dobB = new Date();
     dobB.setFullYear(dobB.getFullYear() - 30);
     donorBUser = await prisma.user.create({
@@ -81,10 +88,39 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
         contactNumber: '+977-9847333444',
         dateOfBirth: dobB,
         lastDonationAt: null,
+        preferences: {
+          allowBloodRequestNotifications: true,
+          preferredNotificationChannel: 'EMAIL',
+        },
       },
     });
 
-    // 4. Create Blood Request
+    // 4. Create Donor Opt-Out (O_POSITIVE, eligible, but opted OUT of notifications)
+    const dobOptOut = new Date();
+    dobOptOut.setFullYear(dobOptOut.getFullYear() - 28);
+    donorOptOutUser = await prisma.user.create({
+      data: {
+        email: 'donorOptOut.opp@test.org',
+        passwordHash,
+        role: Role.DONOR,
+      },
+    });
+    donorOptOutProfile = await prisma.donorProfile.create({
+      data: {
+        userId: donorOptOutUser.id,
+        fullName: 'Hari OptOut',
+        bloodGroup: BloodGroup.O_POSITIVE,
+        address: 'Butwal',
+        contactNumber: '+977-9847555666',
+        dateOfBirth: dobOptOut,
+        lastDonationAt: null,
+        preferences: {
+          allowBloodRequestNotifications: false,
+        },
+      },
+    });
+
+    // 5. Create Blood Request
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 5);
     testBloodRequest = await prisma.bloodRequest.create({
@@ -108,6 +144,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
     adminCookie = [`token=${authService.generateToken(adminUser.id, Role.ADMIN)}`];
     donorACookie = [`token=${authService.generateToken(donorAUser.id, Role.DONOR)}`];
     donorBCookie = [`token=${authService.generateToken(donorBUser.id, Role.DONOR)}`];
+    donorOptOutCookie = [`token=${authService.generateToken(donorOptOutUser.id, Role.DONOR)}`];
   });
 
   afterAll(async () => {
@@ -120,7 +157,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
     await prisma.user.deleteMany();
   });
 
-  describe('1. Candidate-to-Opportunity Outreach Creation', () => {
+  describe('1. Candidate-to-Opportunity Outreach Creation & Consent Safeguards', () => {
     it('should create an opportunity for a selected candidate and dispatch an in-app notification', async () => {
       const res = await request(app)
         .post(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
@@ -147,6 +184,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
         where: { userId: donorAUser.id },
       });
       expect(notif).toBeDefined();
+      expect(notif?.channel).toBe(NotificationChannel.IN_APP);
       expect(notif?.type).toBe('OPPORTUNITY_ALERT');
       expect(notif?.title).toContain('Blood Donation Opportunity');
       // Verify privacy: MUST NOT contain patient diagnosis or confidential notes!
@@ -171,6 +209,39 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       expect(totalOpps).toBe(1);
     });
 
+    it('should respect donor consent: skip candidate donor who disabled notifications (allowBloodRequestNotifications: false)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
+        .set('Cookie', adminCookie)
+        .send({ donorIds: [donorOptOutProfile.id] });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.created).toBe(0);
+      expect(res.body.data.skipped).toBe(1);
+
+      // Verify no opportunity or notification was created
+      const optOutOpp = await prisma.donorOpportunity.findFirst({
+        where: { donorId: donorOptOutProfile.id, bloodRequestId: testBloodRequest.id },
+      });
+      expect(optOutOpp).toBeNull();
+    });
+
+    it('should respect preferred notification channel (EMAIL) when creating outreach notification', async () => {
+      const res = await request(app)
+        .post(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
+        .set('Cookie', adminCookie)
+        .send({ donorIds: [donorBProfile.id] });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.created).toBe(1);
+
+      const notifB = await prisma.notification.findFirst({
+        where: { userId: donorBUser.id, opportunityId: res.body.data.opportunities[0].id },
+      });
+      expect(notifB).toBeDefined();
+      expect(notifB?.channel).toBe(NotificationChannel.EMAIL);
+    });
+
     it('should reject outreach batches exceeding 10 candidates', async () => {
       const fakeIds = Array.from({ length: 11 }, () => '00000000-0000-0000-0000-000000000000');
       const res = await request(app)
@@ -182,7 +253,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
     });
   });
 
-  describe('2. Donor Privacy & IDOR Defenses', () => {
+  describe('2. Donor Privacy, IDOR Defenses & Route Aliasing', () => {
     let oppA: any;
 
     beforeAll(async () => {
@@ -204,6 +275,29 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       // Privacy verification: Patient reference and notes must NOT be present
       expect(res.body.data.bloodRequest.patientReference).toBeUndefined();
       expect(res.body.data.bloodRequest.notes).toBeUndefined();
+    });
+
+    it('should support singular /api/v1/donor/opportunities/:id route alias identically', async () => {
+      const res = await request(app)
+        .get(`/api/v1/donor/opportunities/${oppA.id}`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe(oppA.id);
+    });
+
+    it('should strictly reject unauthenticated user accessing donor opportunities with 401', async () => {
+      const res = await request(app).get(`/api/v1/donor/opportunities/${oppA.id}`);
+      expect(res.status).toBe(401);
+    });
+
+    it('should strictly reject DONOR role accessing admin blood request opportunities API (403)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(403);
     });
 
     it('should strictly reject Donor B accessing Donor A opportunity (403 Forbidden)', async () => {
@@ -239,7 +333,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
 
     it('should transition opportunity from PENDING -> VIEWED when viewed by donor', async () => {
       const res = await request(app)
-        .post(`/api/v1/donors/opportunities/${oppA.id}/view`)
+        .post(`/api/v1/donor/opportunities/${oppA.id}/view`)
         .set('Cookie', donorACookie);
 
       expect(res.status).toBe(200);
@@ -277,15 +371,16 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       });
     });
 
-    it('should allow eligible donor to accept opportunity and transition to ACCEPTED', async () => {
+    it('should allow eligible donor to accept opportunity and transition to ACCEPTED via singular route', async () => {
       const res = await request(app)
-        .post(`/api/v1/donors/opportunities/${oppA.id}/accept`)
+        .post(`/api/v1/donor/opportunities/${oppA.id}/accept`)
         .set('Cookie', donorACookie);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('ACCEPTED');
       expect(res.body.data.respondedAt).toBeDefined();
+      expect(res.body.message).toContain('Blood bank coordinators');
 
       // Ensure accepting does NOT create a donation record
       const donations = await prisma.donation.findMany({
@@ -295,15 +390,12 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
     });
 
     it('should allow donor to decline an active opportunity with structured reason', async () => {
-      // Create opportunity for Donor B
-      const outreachRes = await request(app)
-        .post(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
-        .set('Cookie', adminCookie)
-        .send({ donorIds: [donorBProfile.id] });
-      const oppB = outreachRes.body.data.opportunities[0];
+      const oppB = await prisma.donorOpportunity.findFirst({
+        where: { donorId: donorBProfile.id, bloodRequestId: testBloodRequest.id },
+      });
 
       const res = await request(app)
-        .post(`/api/v1/donors/opportunities/${oppB.id}/decline`)
+        .post(`/api/v1/donor/opportunities/${oppB!.id}/decline`)
         .set('Cookie', donorBCookie)
         .send({
           reason: 'CANNOT_TRAVEL',
@@ -353,6 +445,44 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('expired');
     });
+
+    it('should prevent accepting an opportunity if blood request is already FULFILLED', async () => {
+      // Create fulfilled blood request
+      const fulfilledReq = await prisma.bloodRequest.create({
+        data: {
+          createdById: adminUser.id,
+          bloodGroup: BloodGroup.O_POSITIVE,
+          unitsRequired: 1,
+          unitsFulfilled: 1,
+          status: 'FULFILLED',
+          urgency: RequestUrgency.NORMAL,
+          hospitalName: 'Clinic Full',
+          location: 'Butwal',
+          contactName: 'Hospital Desk',
+          contactNumber: '+977-9800000000',
+          requiredBy: new Date(Date.now() + 86400000),
+        },
+      });
+
+      // Create an opportunity manually for testing defense
+      const oppFulfilled = await prisma.donorOpportunity.create({
+        data: {
+          donorId: donorAProfile.id,
+          bloodRequestId: fulfilledReq.id,
+          matchScore: 90,
+          matchReason: 'Compatible',
+          status: 'PENDING',
+          expiresAt: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/donor/opportunities/${oppFulfilled.id}/accept`)
+        .set('Cookie', donorACookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('fulfilled');
+    });
   });
 
   describe('4. Atomic Donation-to-Opportunity Fulfillment', () => {
@@ -383,7 +513,7 @@ describe('Phase 12: Donor Opportunities & Response Tracking', () => {
   });
 
   describe('5. Admin Outreach Overview & Opportunity Cancellation', () => {
-    it('should return outreach metrics breakdown for clinical coordinators', async () => {
+    it('should return outreach metrics breakdown for blood bank coordinators', async () => {
       const res = await request(app)
         .get(`/api/v1/admin/blood-requests/${testBloodRequest.id}/opportunities`)
         .set('Cookie', adminCookie);

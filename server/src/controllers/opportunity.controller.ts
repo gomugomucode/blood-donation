@@ -193,7 +193,7 @@ export class OpportunityController {
 
       res.status(200).json({
         success: true,
-        message: 'Thank you for accepting! Clinical coordinators have been notified.',
+        message: 'Thank you for accepting! Blood bank coordinators have been notified.',
         data: result,
       });
     } catch (error) {

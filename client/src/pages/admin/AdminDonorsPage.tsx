@@ -90,7 +90,7 @@ export const AdminDonorsPage: React.FC = () => {
           Voluntary Donor Registry
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 mt-1">
-          Search, filter, manage voluntary donors, log procedures, and maintain clinical eligibility records.
+          Search, filter, manage voluntary donors, log procedures, and maintain basic donation eligibility records.
         </p>
       </div>
 

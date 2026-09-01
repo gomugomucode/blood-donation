@@ -23,6 +23,13 @@ export interface User {
   donorProfile?: DonorProfile | null;
 }
 
+export interface DonorConsentPreferences {
+  allowBloodRequestNotifications: boolean;
+  preferredNotificationChannel: NotificationChannel;
+  preferredContactTime?: 'ANYTIME' | 'MORNING' | 'AFTERNOON' | 'EVENING';
+  locationSharingConsent?: boolean;
+}
+
 export interface DonorProfile {
   id: string;
   userId: string;
@@ -32,7 +39,7 @@ export interface DonorProfile {
   contactNumber: string;
   bloodGroup: BloodGroup;
   lastDonationAt?: string | null;
-  preferences?: Record<string, any> | null;
+  preferences?: DonorConsentPreferences | Record<string, any> | null;
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;

@@ -1,4 +1,14 @@
 import { z } from 'zod';
+import { NotificationChannel } from '../types/index.js';
+
+export const donorPreferencesSchema = z
+  .object({
+    allowBloodRequestNotifications: z.boolean().optional(),
+    preferredNotificationChannel: z.nativeEnum(NotificationChannel).optional(),
+    preferredContactTime: z.enum(['ANYTIME', 'MORNING', 'AFTERNOON', 'EVENING']).optional(),
+    locationSharingConsent: z.boolean().optional(),
+  })
+  .passthrough();
 
 export const updateDonorProfileSchema = z.object({
   fullName: z
@@ -20,7 +30,8 @@ export const updateDonorProfileSchema = z.object({
     .regex(/^[+0-9\s\-()]+$/, 'Contact number contains invalid characters')
     .trim()
     .optional(),
-  preferences: z.record(z.any()).optional(),
+  preferences: donorPreferencesSchema.optional(),
 });
 
+export type DonorPreferencesInput = z.infer<typeof donorPreferencesSchema>;
 export type UpdateDonorProfileInput = z.infer<typeof updateDonorProfileSchema>;

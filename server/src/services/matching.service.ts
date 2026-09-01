@@ -8,6 +8,10 @@ export class MatchingService {
   /**
    * Evaluates and ranks potential donor candidates for a specific blood request.
    * Uses a deterministic multi-factor scoring model (100 pts max).
+   *
+   * Note: The ranking score is an operational prioritization mechanism,
+   * not a medical risk or suitability score. It does not replace medical
+   * screening or crossmatching.
    */
   public async findMatchesForRequest(bloodRequestId: string): Promise<{
     request: {
@@ -64,7 +68,7 @@ export class MatchingService {
       .filter((w) => w.length > 2);
 
     for (const donor of potentialDonors) {
-      // 3. Evaluate basic clinical & interval eligibility
+      // 3. Evaluate basic screening & interval eligibility
       const eligibility = eligibilityService.calculateEligibility(
         donor.dateOfBirth,
         donor.lastDonationAt,
