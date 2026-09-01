@@ -1,95 +1,107 @@
-# HEMACARE — PRODUCTION OPERATIONS RUNBOOK
+# HEMACARE — PRODUCTION OPERATIONS & RUNBOOK GUIDE
 
-## 1. System Architecture Overview
+## 1. System Architecture & Sizing Assumptions
 
-HemaCare is a robust, server-authoritative Modular Monolith built on:
-- **Backend:** Node.js (v20+), Express, Prisma ORM, PostgreSQL (v15+), Winston Structured Logger.
+HemaCare is a high-reliability, server-authoritative Modular Monolith:
+- **Backend:** Node.js (v20+), Express 4, Prisma ORM 6, PostgreSQL 15+, Winston Structured Logger.
 - **Frontend:** React 19, Vite, Tailwind CSS, TanStack React Query, Lucide Icons.
-- **Worker Infrastructure:** In-process database-backed notification worker with exponential backoff and graceful shutdown.
-- **Security:** HttpOnly JWT session cookies, CSRF Origin validation, Role-Based Access Control (`DONOR` / `ADMIN`), response-level rate limiters.
+- **Worker Subsystem:** In-process database-backed notification worker with exponential backoff and graceful shutdown.
+- **Security:** HttpOnly JWT session cookies, CSRF/Origin validation, Role-Based Access Control (`DONOR` / `ADMIN`), rate limiting, parameter bounding.
+- **Connection Pool Sizing:**
+  - Standard container instance: `connection_limit=20&pool_timeout=10`
+  - Max concurrent PostgreSQL connections allocated: 50 (shared across API and background worker).
 
 ---
 
-## 2. Deployment Procedures
+## 2. Standard Production Deployment Procedure
 
-### Standard Production Deployment
 ```bash
-# 1. Pull latest verified release
+# 1. Pull verified release branch / tag
 git checkout main
 git pull origin main
 
-# 2. Install dependencies
+# 2. Clean install dependencies
 npm ci
 
-# 3. Apply database migrations
-npm run prisma:deploy --workspace=server
+# 3. Apply database migrations (never run migrate dev or db push in prod)
+npx prisma migrate deploy --schema=server/prisma/schema.prisma
 
-# 4. Build backend and frontend
+# 4. Build production bundles
 npm run build --workspaces
 
-# 5. Restart application process via PM2 or systemd
-pm2 reload hemacare-server
+# 5. Zero-downtime rolling restart (PM2 or container orchestrator)
+pm2 reload hemacare-server --update-env
 ```
 
 ---
 
-## 3. Database Operations & Migration Safety
+## 3. Post-Deployment Verification & Smoke Testing
 
-### Applying Migrations
-- Always run `npm run prisma:deploy --workspace=server` during deployment.
-- Never run `prisma migrate reset` or `prisma migrate dev` on production.
-
-### Rollback Strategy
-1. If a migration failure occurs:
-   - Identify the failed migration SQL.
-   - Execute the corresponding rollback script from `prisma/migrations/down/`.
-   - Restore database from pre-deployment snapshot if necessary.
-2. Revert application code:
+Execute immediately after every production deployment:
+1. **Health Verification:**
    ```bash
-   git checkout <previous-stable-tag>
-   npm run build --workspaces
-   pm2 restart hemacare-server
+   curl -s -o /dev/null -w "%{http_code}" https://api.blooddonation.org/health/live # Expect 200
+   curl -s -o /dev/null -w "%{http_code}" https://api.blooddonation.org/health/ready # Expect 200
    ```
+2. **Coordinator Smoke Test:**
+   - Log in with verified admin credentials at `/admin/login`.
+   - Verify dashboard metrics load (`GET /api/v1/admin/dashboard`).
+3. **Donor Portal Smoke Test:**
+   - Log in with synthetic donor test account at `/login`.
+   - Verify unread notification count badge loads cleanly.
+4. **Audit Log Confirmation:**
+   - Verify `ADMIN_LOGIN` event is recorded in `/admin/audit-logs`.
 
 ---
 
-## 4. Health & Observability Endpoints
+## 4. Health, Observability & Diagnostic Endpoints
 
-| Endpoint | Method | Purpose | Healthy Response |
+| Endpoint | Method | Role Required | Intended Consumer | Healthy Response |
+|---|---|---|---|---|
+| `/health` | `GET` | Public | CDN / Ingress | `200 OK` `{ "status": "healthy" }` |
+| `/api/v1/health/live` | `GET` | Public | Container orchestrator (Liveness) | `200 OK` `{ "status": "UP" }` |
+| `/api/v1/health/ready` | `GET` | Public | Load balancer (Readiness) | `200 OK` `{ "status": "READY" }` (503 if DB down) |
+| `/api/v1/admin/operations/system-status` | `GET` | `ADMIN` | Coordinator Telemetry Dashboard | `200 OK` `{ "success": true, "data": { ... } }` |
+
+---
+
+## 5. Live Monitoring & Alert Thresholds
+
+| Metric | Warning Threshold | Critical Threshold | Action Required |
 |---|---|---|---|
-| `/health` | `GET` | Basic service ping | `200 OK` `{ "status": "healthy" }` |
-| `/api/v1/health/live` | `GET` | Kubernetes Liveness probe | `200 OK` `{ "status": "UP" }` |
-| `/api/v1/health/ready` | `GET` | Kubernetes Readiness probe (checks DB connectivity) | `200 OK` `{ "status": "READY" }` (returns `503` if DB down) |
-| `/api/v1/admin/operations/system-status` | `GET` | Admin deep diagnostic telemetry | `200 OK` (Admin role required) |
+| **API Error Rate (5xx)** | > 0.5% over 5m | > 2.0% over 2m | Inspect runtime logs for exceptions; consider rollback |
+| **API p95 Latency** | > 250 ms | > 750 ms | Inspect PostgreSQL slow query logs and active connection count |
+| **Notification Failure Rate** | > 5% over 15m | > 15% over 15m | Check external carrier status (Resend/SendGrid/Twilio) |
+| **PostgreSQL Disk Usage** | > 75% | > 85% | Expand disk volume or purge old telemetry logs |
+| **Active DB Connections** | > 70% max pool | > 90% max pool | Check connection leaks; increase pool allocation |
 
 ---
 
-## 5. Incident Response & Outage Playbooks
+## 6. Backup, PITR & Disaster Recovery Procedures
 
-### Outage Scenario 1: Database Connection Loss
-- **Symptoms:** `/api/v1/health/ready` returns `503 Service Unavailable`, logs report connection timeouts.
-- **Action:**
-  1. Check PostgreSQL instance status: `systemctl status postgresql` or cloud console.
-  2. Verify connection pool limits in `DATABASE_URL` (recommended: `connection_limit=20&pool_timeout=10`).
-  3. Restart PostgreSQL if unresponsive.
-  4. Application will automatically reconnect upon DB restoration.
+### Automated Backup Architecture
+- **Daily Full Snapshot:** Automated `pg_dump` snapshot generated every 24 hours and stored in encrypted S3/GCS bucket with 30-day retention.
+- **Continuous WAL Archiving:** Write-Ahead Logging (WAL) enabled on managed database allowing Point-In-Time Recovery (PITR) with RPO < 15 minutes.
 
-### Outage Scenario 2: External Email/SMS Provider Outage
-- **Symptoms:** Notifications enter `FAILED` status with `errorCode: PROVIDER_DOWN` or `UNCONFIGURED_PROVIDER`.
-- **Action:**
-  1. Inspect `/api/v1/admin/operations/system-status` for notification failure rates.
-  2. Check status page of Resend/SendGrid/Twilio.
-  3. The notification worker will retry recoverable failed notifications up to 3 times with exponential backoff.
-  4. If provider outage is prolonged, temporarily set `EMAIL_PROVIDER=mock` or `SMS_PROVIDER=mock` to prevent queue accumulation while in-app notifications continue normally.
+### Staging Recovery Drill Procedure
+```bash
+# 1. Download snapshot from backup vault
+aws s3 cp s3://hemacare-backups/prod-latest.dump ./staging-restore.dump
+
+# 2. Restore into isolated staging database
+pg_restore -h staging-db-host -U staging_user -d blood_donation_staging -c ./staging-restore.dump
+
+# 3. Run migration verification
+npx prisma migrate deploy --schema=server/prisma/schema.prisma
+
+# 4. Start staging application and verify health
+curl -s http://staging-api:5000/api/v1/health/ready
+```
 
 ---
 
-## 6. Backup & Recovery Policy
+## 7. Operational Incident Playbooks
 
-- **Backup Schedule:** Daily automated PostgreSQL pg_dump snapshots stored in encrypted object storage.
-- **Recovery Point Objective (RPO):** Maximum 1 hour (via WAL archiving) or 24 hours (via daily snapshot).
-- **Recovery Time Objective (RTO):** Under 30 minutes for database restore and application restart.
-- **Restore Command:**
-  ```bash
-  pg_restore -h <db-host> -U <db-user> -d blood_donation_db -c /path/to/backup.dump
-  ```
+For detailed playbooks covering Database Outages, API Crash Loops, Notification Vendor Outages, Compromised Credentials, Secret Rotations, and Privacy Exposures, refer directly to [`docs/INCIDENT_RESPONSE.md`](file:///c:/Users/Anupam%20Baral/Desktop/blood-donation/docs/INCIDENT_RESPONSE.md).
+
+For step-by-step application and database migration rollback strategies, refer directly to [`docs/PRODUCTION_ROLLBACK.md`](file:///c:/Users/Anupam%20Baral/Desktop/blood-donation/docs/PRODUCTION_ROLLBACK.md).

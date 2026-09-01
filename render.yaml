@@ -1,0 +1,66 @@
+# ==============================================================================
+# HemaCare Render Blueprint Deployment Specification
+# ==============================================================================
+services:
+  # 1. Express Backend REST API & Notification Worker
+  - type: web
+    name: hemacare-api
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build --workspace=server
+    startCommand: npm start --workspace=server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hemacare-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: hemacare-client
+          property: host
+      - key: LOG_LEVEL
+        value: info
+      - key: EMAIL_PROVIDER
+        value: mock
+      - key: SMS_PROVIDER
+        value: mock
+
+  # 2. React 19 Frontend Single Page Application
+  - type: web
+    name: hemacare-client
+    runtime: static
+    buildCommand: npm install && npm run build --workspace=client
+    staticPublishPath: client/dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+
+# 3. Managed PostgreSQL Database
+databases:
+  - name: hemacare-postgres
+    plan: starter
+    region: oregon
+    databaseName: blood_donation_db
+    user: postgres
