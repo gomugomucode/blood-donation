@@ -1,8 +1,30 @@
+import bcrypt from 'bcryptjs';
 import { app } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
 import { notificationWorker } from './workers/notification.worker.js';
+
+const ensureAdminUser = async () => {
+  try {
+    const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+    if (adminCount === 0) {
+      const passwordHash = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
+      await prisma.user.create({
+        data: {
+          email: env.ADMIN_EMAIL.toLowerCase().trim(),
+          passwordHash,
+          role: 'ADMIN',
+        },
+      });
+      logger.info(`Bootstrapped initial admin user (${env.ADMIN_EMAIL}) successfully`);
+    }
+  } catch (error) {
+    logger.warn('Could not verify/bootstrap admin user on startup', {
+      error: (error as Error).message,
+    });
+  }
+};
 
 const startServer = async () => {
   try {
@@ -10,7 +32,10 @@ const startServer = async () => {
     await prisma.$connect();
     logger.info('Connected to PostgreSQL database successfully');
 
-    // 2. Start asynchronous notification worker (non-test environments)
+    // 2. Ensure initial admin user exists
+    await ensureAdminUser();
+
+    // 3. Start asynchronous notification worker (non-test environments)
     if (env.NODE_ENV !== 'test') {
       notificationWorker.start();
     }

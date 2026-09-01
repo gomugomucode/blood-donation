@@ -81,9 +81,13 @@ export class NotificationWorker {
 
       return candidates.length;
     } catch (error: any) {
-      logger.error('Error during notification worker batch execution', {
-        error: error.message,
-      });
+      if (error?.message?.includes('does not exist in the current database')) {
+        logger.warn('Notification worker waiting for database migrations to finish...');
+      } else {
+        logger.error('Error during notification worker batch execution', {
+          error: error.message,
+        });
+      }
       return 0;
     }
   }
