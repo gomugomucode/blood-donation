@@ -43,6 +43,7 @@ export class SmsNotificationProvider {
 
         const response = await fetch(endpoint, {
           method: 'POST',
+          signal: AbortSignal.timeout(10000),
           headers: {
             Authorization: authHeader,
             'Content-Type': 'application/x-www-form-urlencoded',

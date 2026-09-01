@@ -13,6 +13,7 @@ import {
   DeclineReason,
   NotificationChannel,
   NotificationType,
+  NotificationStatus,
   PaginatedResult,
   OutreachStats,
 } from '../types/index.js';
@@ -163,16 +164,18 @@ export class OpportunityService {
             const notifTitle = `Blood Donation Opportunity (${bloodRequest.bloodGroup.replace('_', '+')})`;
             const notifMessage = `A potential match was found for a ${bloodRequest.urgency.toLowerCase()} urgency blood request in ${bloodRequest.location} needed by ${new Date(bloodRequest.requiredBy).toLocaleDateString()}. Please review your opportunity.`;
 
+            const isExternal = preferredChannel !== NotificationChannel.IN_APP;
             await tx.notification.create({
               data: {
                 userId: donorProfile.userId,
                 opportunityId: opp.id,
                 channel: preferredChannel,
                 type: NotificationType.OPPORTUNITY_ALERT,
-                status: 'SENT',
+                status: isExternal ? NotificationStatus.PENDING : NotificationStatus.SENT,
                 title: notifTitle,
                 message: notifMessage,
-                sentAt: new Date(),
+                idempotencyKey: `opp-${opp.id}-${preferredChannel}`,
+                sentAt: isExternal ? null : new Date(),
               },
             });
 

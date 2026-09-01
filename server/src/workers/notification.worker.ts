@@ -41,22 +41,36 @@ export class NotificationWorker {
   }
 
   /**
-   * Processes a batch of pending or recoverable failed notifications.
+   * Processes a batch of pending or recoverable failed notifications with exponential backoff and concurrency locking.
    */
   public async processBatch(): Promise<number> {
     try {
-      // Find candidate notifications: PENDING or FAILED with retry cooldown elapsed
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const now = Date.now();
+      const thirtySecondsAgo = new Date(now - 30 * 1000);
+      const twoMinutesAgo = new Date(now - 2 * 60 * 1000);
 
+      // Find candidates:
+      // 1. PENDING external notifications (attemptCount === 0)
+      // 2. FAILED retryable notifications after exponential backoff delay (attempt 1 -> 30s, attempt 2 -> 2m)
       const candidates = await prisma.notification.findMany({
         where: {
           channel: { not: NotificationChannel.IN_APP },
           OR: [
-            { status: NotificationStatus.PENDING },
+            {
+              status: NotificationStatus.PENDING,
+              attemptCount: 0,
+            },
             {
               status: NotificationStatus.FAILED,
-              attemptCount: { lt: this.maxAttempts },
+              attemptCount: 1,
+              lastAttemptAt: { lte: thirtySecondsAgo },
+              NOT: { errorCode: { startsWith: 'SUPPRESSED_' } },
+            },
+            {
+              status: NotificationStatus.FAILED,
+              attemptCount: 2,
               lastAttemptAt: { lte: twoMinutesAgo },
+              NOT: { errorCode: { startsWith: 'SUPPRESSED_' } },
             },
           ],
         },
@@ -68,6 +82,11 @@ export class NotificationWorker {
               donorProfile: true,
             },
           },
+          opportunity: {
+            include: {
+              bloodRequest: true,
+            },
+          },
         },
       });
 
@@ -75,11 +94,13 @@ export class NotificationWorker {
         return 0;
       }
 
+      let processedCount = 0;
       for (const notif of candidates) {
-        await this.processSingleNotification(notif);
+        const processed = await this.processSingleNotification(notif);
+        if (processed) processedCount++;
       }
 
-      return candidates.length;
+      return processedCount;
     } catch (error: any) {
       if (error?.message?.includes('does not exist in the current database')) {
         logger.warn('Notification worker waiting for database migrations to finish...');
@@ -92,10 +113,62 @@ export class NotificationWorker {
     }
   }
 
-  private async processSingleNotification(notif: any): Promise<void> {
-    const provider = NotificationProviderFactory.getProvider(notif.channel);
-    const newAttemptCount = notif.attemptCount + 1;
+  private async processSingleNotification(notif: any): Promise<boolean> {
+    // 1. Optimistic Concurrency Claim:
+    // Atomically claim the notification to guarantee only one worker thread can dispatch it
+    const claim = await prisma.notification.updateMany({
+      where: {
+        id: notif.id,
+        status: notif.status,
+        attemptCount: notif.attemptCount,
+      },
+      data: {
+        attemptCount: notif.attemptCount + 1,
+        lastAttemptAt: new Date(),
+      },
+    });
 
+    if (claim.count === 0) {
+      // Concurrently claimed by another worker instance
+      logger.info(`[Worker Skip] Notification ${notif.id} already claimed by another worker.`);
+      return false;
+    }
+
+    const currentAttemptCount = notif.attemptCount + 1;
+
+    // 2. Stale Notification Protection / Request State Verification:
+    // If the notification is linked to an opportunity, verify the underlying blood request
+    if (notif.opportunityId) {
+      const opp = notif.opportunity || (await prisma.donorOpportunity.findUnique({
+        where: { id: notif.opportunityId },
+        include: { bloodRequest: true },
+      }));
+
+      if (opp?.bloodRequest) {
+        const reqStatus = opp.bloodRequest.status;
+        if (reqStatus === 'CANCELLED' || reqStatus === 'EXPIRED' || reqStatus === 'FULFILLED') {
+          logger.info(`[Worker Suppress] Notification ${notif.id} suppressed: Linked blood request is ${reqStatus}.`, {
+            notificationId: notif.id,
+            bloodRequestId: opp.bloodRequestId,
+            requestStatus: reqStatus,
+          });
+
+          await prisma.notification.update({
+            where: { id: notif.id },
+            data: {
+              status: NotificationStatus.FAILED,
+              errorCode: `SUPPRESSED_REQUEST_${reqStatus}`,
+              failedAt: new Date(),
+              attemptCount: this.maxAttempts, // Terminal: do not retry suppressed notifications
+            },
+          });
+          return true;
+        }
+      }
+    }
+
+    // 3. Dispatch via Provider
+    const provider = NotificationProviderFactory.getProvider(notif.channel);
     let dispatchResult: { externalId?: string; status: NotificationStatus; error?: string };
 
     try {
@@ -116,11 +189,25 @@ export class NotificationWorker {
       };
     }
 
+    // 4. Non-Retryable Error Check:
+    // If error is permanent (missing recipient info, invalid configuration, permanent 4xx), mark as terminal failure
+    let finalAttemptCount = currentAttemptCount;
+    const isNonRetryable =
+      dispatchResult.status === NotificationStatus.FAILED &&
+      (dispatchResult.error?.includes('UNCONFIGURED_PROVIDER') ||
+        dispatchResult.error?.includes('Missing recipient') ||
+        dispatchResult.error?.includes('Invalid phone') ||
+        dispatchResult.error?.includes('Unsupported'));
+
+    if (isNonRetryable) {
+      finalAttemptCount = this.maxAttempts; // Mark as terminal failure
+    }
+
     await prisma.notification.update({
       where: { id: notif.id },
       data: {
         status: dispatchResult.status,
-        attemptCount: newAttemptCount,
+        attemptCount: finalAttemptCount,
         lastAttemptAt: new Date(),
         failedAt: dispatchResult.status === NotificationStatus.FAILED ? new Date() : null,
         errorCode: dispatchResult.error || null,
@@ -133,9 +220,11 @@ export class NotificationWorker {
       notificationId: notif.id,
       channel: notif.channel,
       status: dispatchResult.status,
-      attempt: newAttemptCount,
+      attempt: finalAttemptCount,
       error: dispatchResult.error,
     });
+
+    return true;
   }
 }
 

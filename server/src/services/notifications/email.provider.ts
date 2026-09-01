@@ -36,6 +36,7 @@ export class EmailNotificationProvider {
       if (this.config.provider === 'resend') {
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
+          signal: AbortSignal.timeout(10000),
           headers: {
             Authorization: `Bearer ${this.config.apiKey}`,
             'Content-Type': 'application/json',
@@ -64,6 +65,7 @@ export class EmailNotificationProvider {
       if (this.config.provider === 'sendgrid') {
         const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',
+          signal: AbortSignal.timeout(10000),
           headers: {
             Authorization: `Bearer ${this.config.apiKey}`,
             'Content-Type': 'application/json',
