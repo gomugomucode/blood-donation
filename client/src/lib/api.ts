@@ -1,7 +1,20 @@
 import axios, { AxiosError } from 'axios';
 
+const getApiBaseUrl = (): string => {
+  const envUrl = (import.meta.env.VITE_API_URL || '').trim();
+  if (!envUrl) {
+    return '/api/v1';
+  }
+  const clean = envUrl.replace(/\/+$/, '');
+  // If the user configured just the origin like "https://blood-donation-6vcp.onrender.com", append "/api/v1"
+  if (!clean.endsWith('/api/v1') && !clean.endsWith('/api')) {
+    return `${clean}/api/v1`;
+  }
+  return clean;
+};
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

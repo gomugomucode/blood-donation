@@ -197,8 +197,10 @@ export const createApp = (): Express => {
   app.get('/health', healthCheckHandler);
   app.get('/api/v1/health', healthCheckHandler);
 
-  // 9. Mount API Routes
+  // 9. Mount API Routes (Canonical /api/v1 with /api and direct route aliases)
   app.use('/api/v1', routes);
+  app.use('/api', routes);
+  app.use(routes);
 
   // 10. 404 and Global Error Handling
   app.use(notFoundHandler);
