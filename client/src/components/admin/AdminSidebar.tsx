@@ -49,13 +49,13 @@ export const AdminSidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 border-r border-slate-200/80 bg-white min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between hidden md:flex shrink-0">
+    <aside className="w-64 border-r border-[#E7E5E4] bg-white min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between hidden md:flex shrink-0 text-left">
       <div className="space-y-6">
         {/* Quick Emergency Action */}
         <div className="pt-1">
           <NavLink
             to="/admin/requests/create"
-            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold shadow-sm shadow-rose-600/10 transition-all hover:shadow-md whitespace-nowrap"
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-[#D92D45] hover:bg-[#B42318] active:bg-[#8F1D35] text-white text-xs font-bold shadow-xs transition-all whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
             <span>New Blood Request</span>
@@ -63,7 +63,7 @@ export const AdminSidebar: React.FC = () => {
         </div>
 
         <div>
-          <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+          <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-[#667085] mb-2">
             Clinical Operations
           </p>
           <nav className="space-y-1">
@@ -78,8 +78,8 @@ export const AdminSidebar: React.FC = () => {
                     cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150',
                       isActive
-                        ? 'bg-rose-50 text-rose-700 font-bold border border-rose-200 shadow-2xs'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'bg-[#FFF0F2] text-[#D92D45] font-bold border border-[#FFE4E8]'
+                        : 'text-[#667085] hover:bg-[#FAF9F7] hover:text-[#1F2937]'
                     )
                   }
                 >
@@ -92,7 +92,7 @@ export const AdminSidebar: React.FC = () => {
         </div>
 
         <div>
-          <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+          <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-[#667085] mb-2">
             Governance & Audit
           </p>
           <nav className="space-y-1">
@@ -107,8 +107,8 @@ export const AdminSidebar: React.FC = () => {
                     cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150',
                       isActive
-                        ? 'bg-rose-50 text-rose-700 font-bold border border-rose-200 shadow-2xs'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'bg-[#FFF0F2] text-[#D92D45] font-bold border border-[#FFE4E8]'
+                        : 'text-[#667085] hover:bg-[#FAF9F7] hover:text-[#1F2937]'
                     )
                   }
                 >
@@ -121,13 +121,13 @@ export const AdminSidebar: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 text-2xs text-slate-500 space-y-1">
-        <p className="font-bold text-slate-800 flex items-center gap-1.5">
-          <HeartHandshake className="w-4 h-4 text-rose-600" />
+      <div className="p-3.5 rounded-2xl bg-[#FAF9F7] border border-[#E7E5E4] text-2xs text-[#667085] space-y-1">
+        <p className="font-bold text-[#1F2937] flex items-center gap-1.5">
+          <HeartHandshake className="w-4 h-4 text-[#D92D45]" />
           HemaCare Operations
         </p>
         <p className="text-[11px] leading-relaxed">
-          High-availability Blood Matching & Transfusion Management System.
+          Regional Transfusion Registry & Clinical Dispatch.
         </p>
       </div>
     </aside>

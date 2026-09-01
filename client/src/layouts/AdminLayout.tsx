@@ -5,11 +5,11 @@ import { AdminSidebar } from '../components/admin/AdminSidebar.js';
 
 export const AdminLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-[#FAF9F7] font-sans text-[#1F2937]">
       <AdminHeader />
       <div className="flex flex-1">
         <AdminSidebar />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl overflow-x-hidden">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl overflow-x-hidden animate-fade-in">
           <Outlet />
         </main>
       </div>
