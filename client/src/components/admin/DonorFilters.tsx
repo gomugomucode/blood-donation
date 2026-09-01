@@ -45,7 +45,7 @@ export const DonorFilters: React.FC<DonorFiltersProps> = ({ filters, onChange, o
   const hasActiveFilters = Boolean(filters.search || filters.bloodGroup || filters.includeDeactivated);
 
   return (
-    <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+    <div className="p-4 bg-white rounded-2xl border border-[#E7E5E4] shadow-card space-y-3 text-left">
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
         {/* Search */}
         <div className="sm:col-span-6">
@@ -54,7 +54,7 @@ export const DonorFilters: React.FC<DonorFiltersProps> = ({ filters, onChange, o
             placeholder="Search by name, email, phone, or location..."
             value={filters.search || ''}
             onChange={handleSearchChange}
-            leftIcon={<Search className="w-4 h-4" />}
+            leftIcon={<Search className="w-4 h-4 text-[#9CA3AF]" />}
           />
         </div>
 
@@ -75,7 +75,7 @@ export const DonorFilters: React.FC<DonorFiltersProps> = ({ filters, onChange, o
               variant="ghost"
               size="sm"
               onClick={onReset}
-              className="w-full text-slate-500 hover:text-slate-800"
+              className="w-full text-[#667085] hover:text-[#1F2937]"
               leftIcon={<X className="w-3.5 h-3.5" />}
             >
               Reset Filters
@@ -91,9 +91,9 @@ export const DonorFilters: React.FC<DonorFiltersProps> = ({ filters, onChange, o
           id="include-deactivated"
           checked={Boolean(filters.includeDeactivated)}
           onChange={handleDeactivatedChange}
-          className="w-4 h-4 text-crimson-600 rounded border-slate-300 focus:ring-crimson-500 cursor-pointer"
+          className="w-4 h-4 text-[#D92D45] rounded border-[#E7E5E4] focus:ring-[#D92D45] cursor-pointer"
         />
-        <label htmlFor="include-deactivated" className="text-xs text-slate-600 font-medium cursor-pointer select-none">
+        <label htmlFor="include-deactivated" className="text-xs text-[#667085] font-medium cursor-pointer select-none">
           Include deactivated/archived donor accounts
         </label>
       </div>

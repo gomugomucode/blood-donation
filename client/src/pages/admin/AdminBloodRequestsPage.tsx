@@ -72,29 +72,29 @@ export const AdminBloodRequestsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in text-left">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <HeartPulse className="w-8 h-8 text-rose-600 shrink-0" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] tracking-tight flex items-center gap-2.5">
+            <HeartPulse className="w-8 h-8 text-[#D92D45] shrink-0" />
             Blood Requests & Coordination
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600">
+          <p className="mt-1 text-xs sm:text-sm text-[#667085]">
             Create, monitor, and coordinate matched voluntary donor outreach for clinical hospital blood requests.
           </p>
         </div>
         <Link to="/admin/requests/create">
-          <Button variant="critical" size="md" leftIcon={<Plus className="w-4 h-4" />}>
+          <Button variant="primary" size="md" leftIcon={<Plus className="w-4 h-4" />}>
             New Blood Request
           </Button>
         </Link>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-card space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 pb-1">
-          <Filter className="w-4 h-4 text-slate-400" />
+      <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] shadow-card space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#1F2937] pb-1">
+          <Filter className="w-4 h-4 text-[#667085]" />
           Filter & Search Blood Requests
         </div>
 
@@ -107,7 +107,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              leftIcon={<Search className="w-4 h-4 text-slate-400" />}
+              leftIcon={<Search className="w-4 h-4 text-[#9CA3AF]" />}
             />
           </div>
 
@@ -146,11 +146,11 @@ export const AdminBloodRequestsPage: React.FC = () => {
         </div>
 
         {(search || status || bloodGroup || urgency) && (
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="pt-2 border-t border-[#E7E5E4] flex items-center justify-between text-xs text-[#667085]">
             <span>Filtered results active</span>
             <button
               onClick={handleResetFilters}
-              className="text-rose-600 hover:text-rose-700 font-bold cursor-pointer"
+              className="text-[#D92D45] hover:text-[#B42318] font-bold cursor-pointer"
             >
               Reset All Filters
             </button>
@@ -160,11 +160,11 @@ export const AdminBloodRequestsPage: React.FC = () => {
 
       {/* Main Table Content */}
       {isLoading ? (
-        <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-card flex justify-center items-center">
+        <div className="bg-white rounded-2xl p-12 border border-[#E7E5E4] shadow-card flex justify-center items-center">
           <LoadingSpinner size="lg" label="Loading blood requests..." />
         </div>
       ) : isError ? (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-card">
+        <div className="bg-white rounded-2xl p-8 border border-[#E7E5E4] shadow-card">
           <ErrorState
             title="Failed to load blood requests"
             message={(error as Error)?.message || 'An unexpected error occurred while fetching requests.'}
@@ -172,13 +172,13 @@ export const AdminBloodRequestsPage: React.FC = () => {
           />
         </div>
       ) : !data?.items || data.items.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-card">
+        <div className="bg-white rounded-2xl p-12 border border-[#E7E5E4] shadow-card">
           <EmptyState
             title="No blood requests found"
             description="There are currently no blood requests matching your search or filter parameters."
             action={
               <Link to="/admin/requests/create">
-                <Button variant="critical" size="sm">
+                <Button variant="primary" size="sm">
                   Create Request
                 </Button>
               </Link>
@@ -186,11 +186,11 @@ export const AdminBloodRequestsPage: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-card overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E7E5E4] shadow-card overflow-hidden">
           {/* Desktop Table */}
           <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-600">
-              <thead className="bg-slate-50/80 border-b border-slate-200 uppercase tracking-wider font-bold text-slate-700 text-[11px]">
+            <table className="w-full text-left text-xs text-[#667085]">
+              <thead className="bg-[#FAF9F7] border-b border-[#E7E5E4] uppercase tracking-wider font-bold text-[#1F2937] text-[11px]">
                 <tr>
                   <th className="py-4 px-6">Blood Group</th>
                   <th className="py-4 px-6">Fulfillment Progress</th>
@@ -201,7 +201,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
                   <th className="py-4 px-6 text-right">Coordination</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#E7E5E4]/60">
                 {data.items.map((req) => {
                   const percentage = Math.min(
                     100,
@@ -212,13 +212,13 @@ export const AdminBloodRequestsPage: React.FC = () => {
                   return (
                     <tr
                       key={req.id}
-                      className="hover:bg-slate-50/80 transition-colors group"
+                      className="hover:bg-[#FAF9F7] transition-colors group"
                     >
-                      <td className="py-4 px-6 font-bold text-slate-900">
+                      <td className="py-4 px-6 font-bold text-[#1F2937]">
                         <div className="flex items-center gap-2">
                           <BloodGroupBadge bloodGroup={req.bloodGroup} />
                           {req.patientReference && (
-                            <span className="text-2xs text-slate-400 font-mono">
+                            <span className="text-2xs text-[#667085] font-mono">
                               #{req.patientReference}
                             </span>
                           )}
@@ -228,19 +228,19 @@ export const AdminBloodRequestsPage: React.FC = () => {
                       <td className="py-4 px-6">
                         <div className="space-y-1.5 min-w-[140px]">
                           <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="font-bold text-slate-900">
+                            <span className="font-bold text-[#1F2937]">
                               {req.unitsFulfilled} / {req.unitsRequired} Units
                             </span>
-                            <span className="text-slate-500 font-semibold">{percentage}%</span>
+                            <span className="text-[#667085] font-semibold">{percentage}%</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div className="w-full bg-[#FAF9F7] border border-[#E7E5E4] rounded-full h-2 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${
                                 req.status === 'FULFILLED'
-                                  ? 'bg-emerald-500'
+                                  ? 'bg-[#15803D]'
                                   : percentage > 0
-                                  ? 'bg-amber-500'
-                                  : 'bg-rose-500'
+                                  ? 'bg-[#B45309]'
+                                  : 'bg-[#D92D45]'
                               }`}
                               style={{ width: `${percentage}%` }}
                             />
@@ -254,12 +254,12 @@ export const AdminBloodRequestsPage: React.FC = () => {
 
                       <td className="py-4 px-6">
                         <div className="space-y-0.5">
-                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <div className="font-bold text-[#1F2937] flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-[#D92D45] shrink-0" />
                             <span className="truncate max-w-[200px]">{req.hospitalName}</span>
                           </div>
-                          <div className="text-2xs text-slate-500 flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <div className="text-2xs text-[#667085] flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#9CA3AF]" />
                             <span className="truncate max-w-[200px]">{req.location}</span>
                           </div>
                         </div>
@@ -267,8 +267,8 @@ export const AdminBloodRequestsPage: React.FC = () => {
 
                       <td className="py-4 px-6 whitespace-nowrap font-mono">
                         <div className="flex items-center gap-1.5 text-xs">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span className={isOverdue ? 'text-red-600 font-bold' : 'text-slate-700 font-semibold'}>
+                          <Calendar className="w-3.5 h-3.5 text-[#9CA3AF]" />
+                          <span className={isOverdue ? 'text-[#B42318] font-bold' : 'text-[#1F2937] font-semibold'}>
                             {formatDate(req.requiredBy)}
                           </span>
                         </div>
@@ -280,7 +280,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
 
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <Link to={`/admin/requests/${req.id}`}>
-                          <Button variant="outline" size="sm" rightIcon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}>
+                          <Button variant="outline" size="sm" rightIcon={<Sparkles className="w-3.5 h-3.5 text-[#B45309]" />}>
                             Match & Outreach
                           </Button>
                         </Link>
@@ -293,7 +293,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
           </div>
 
           {/* Mobile Card Layout */}
-          <div className="block lg:hidden divide-y divide-slate-100">
+          <div className="block lg:hidden divide-y divide-[#E7E5E4]/60">
             {data.items.map((req) => {
               const percentage = Math.min(
                 100,
@@ -311,28 +311,28 @@ export const AdminBloodRequestsPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-slate-900 text-sm">{req.hospitalName}</h3>
-                    <p className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                    <h3 className="font-bold text-[#1F2937] text-sm">{req.hospitalName}</h3>
+                    <p className="text-2xs text-[#667085] flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#D92D45]" />
                       {req.location}
                     </p>
                   </div>
 
-                  <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono text-xs">
-                    <div className="flex justify-between font-bold text-slate-900">
+                  <div className="space-y-1 bg-[#FAF9F7] p-3 rounded-xl border border-[#E7E5E4] font-mono text-xs">
+                    <div className="flex justify-between font-bold text-[#1F2937]">
                       <span>Fulfillment: {req.unitsFulfilled} / {req.unitsRequired} Units</span>
                       <span>{percentage}%</span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-[#E7E5E4] rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="h-full bg-rose-600 rounded-full"
+                        className="h-full bg-[#D92D45] rounded-full"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-2xs text-slate-500 font-mono">
+                    <span className="text-2xs text-[#667085] font-mono">
                       Needed: {formatDate(req.requiredBy)}
                     </span>
                     <Link to={`/admin/requests/${req.id}`}>
@@ -347,7 +347,7 @@ export const AdminBloodRequestsPage: React.FC = () => {
           </div>
 
           {data.pagination && data.pagination.totalPages > 1 && (
-            <div className="p-4 border-t border-slate-100">
+            <div className="p-4 border-t border-[#E7E5E4]">
               <Pagination
                 pagination={data.pagination}
                 onPageChange={setPage}
