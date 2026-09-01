@@ -49,13 +49,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
       {serverError && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 p-3.5 text-xs text-red-800 bg-red-50 border border-red-200 rounded-xl animate-fade-in"
+          className="flex items-start gap-2.5 p-3.5 text-xs text-[#B42318] bg-[#FEF2F2] border border-[#FEE2E2] rounded-xl animate-fade-in"
         >
-          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <AlertCircle className="w-4 h-4 text-[#B42318] shrink-0 mt-0.5" />
           <span className="font-medium">{serverError}</span>
         </div>
       )}
@@ -66,7 +66,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
         placeholder="e.g. sarah.jenkins@example.org"
         autoComplete="email"
         required
-        leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
+        leftIcon={<Mail className="w-4 h-4 text-[#9CA3AF]" />}
         error={errors.email?.message}
         {...register('email')}
       />
@@ -78,14 +78,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
           placeholder="••••••••"
           autoComplete="current-password"
           required
-          leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
+          leftIcon={<Lock className="w-4 h-4 text-[#9CA3AF]" />}
           error={errors.password?.message}
           {...register('password')}
         />
         <div className="flex justify-end pt-1">
           <Link
             to="/forgot-password"
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline transition"
+            className="text-xs font-semibold text-[#D92D45] hover:text-[#B42318] hover:underline transition"
           >
             Forgot password?
           </Link>
@@ -94,26 +94,26 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
 
       <Button
         type="submit"
-        variant={isAdmin ? 'secondary' : 'primary'}
+        variant="primary"
         size="lg"
         className="w-full mt-2"
         isLoading={isSubmitting}
         leftIcon={isAdmin ? <ShieldAlert className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
       >
-        {isAdmin ? 'Sign in to Coordinator Console' : 'Sign In as Donor'}
+        {isAdmin ? 'Sign in to Coordinator Center' : 'Sign In as Donor'}
       </Button>
 
       {!isAdmin ? (
-        <p className="text-center text-xs text-slate-500 pt-3">
+        <p className="text-center text-xs text-[#667085] pt-3">
           Don't have a donor account yet?{' '}
-          <Link to="/register" className="font-bold text-rose-600 hover:text-rose-700 underline">
+          <Link to="/register" className="font-bold text-[#D92D45] hover:text-[#B42318] underline">
             Register as a Donor
           </Link>
         </p>
       ) : (
-        <p className="text-center text-xs text-slate-500 pt-3">
-          Need clinical or donor access?{' '}
-          <Link to="/login" className="font-bold text-slate-800 hover:underline">
+        <p className="text-center text-xs text-[#667085] pt-3">
+          Need donor portal access?{' '}
+          <Link to="/login" className="font-bold text-[#1F2937] hover:text-[#D92D45] hover:underline">
             Go to Donor Portal
           </Link>
         </p>

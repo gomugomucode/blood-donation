@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
-  Droplets,
   ArrowRight,
   Activity,
   Hospital,
   Lock,
   Heart,
   Users,
-  CheckCircle2,
   Clock,
   MapPin,
   AlertCircle,
