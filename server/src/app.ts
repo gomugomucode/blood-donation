@@ -15,6 +15,9 @@ import { logger } from './utils/logger.js';
 export const createApp = (): Express => {
   const app = express();
 
+  // Trust first proxy (Render / Cloudflare) for accurate client IP resolution in rate limiters
+  app.set('trust proxy', 1);
+
   // 1. Request Correlation ID (X-Request-ID)
   app.use(requestIdMiddleware);
 

@@ -23,6 +23,17 @@ export const errorHandler = (
     return;
   }
 
+  // 2. Malformed JSON Body Parsing Error (body-parser SyntaxError -> 400 Bad Request)
+  if (err instanceof SyntaxError && 'status' in err && (err as any).status === 400 && 'body' in err) {
+    logger.warn(`Malformed JSON request payload: ${err.message}`, {
+      requestId: req.id,
+      method: req.method,
+      path: req.path,
+    });
+    sendError(res, 'Malformed JSON payload in request body.', 400);
+    return;
+  }
+
   // 2. Prisma Database Specific Errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     // Unique constraint violation (P2002)
