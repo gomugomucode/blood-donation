@@ -42,6 +42,7 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import { formatDate } from '../../lib/utils.js';
+import { getApiErrorMessage } from '../../lib/api.js';
 
 export const AdminBloodRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -123,6 +124,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
 
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
   const [batchSuccessMsg, setBatchSuccessMsg] = useState<string | null>(null);
+  const [batchErrorMsg, setBatchErrorMsg] = useState<string | null>(null);
 
   const [selectedCandidate, setSelectedCandidate] = useState<DonorMatchCandidate | null>(null);
   const [notifyChannel, setNotifyChannel] = useState<'IN_APP' | 'SMS' | 'EMAIL'>('IN_APP');
@@ -209,17 +211,35 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
     setSelectedCandidateIds(topIds);
   };
 
+  const isRequestClosed = Boolean(
+    request && (request.status === 'FULFILLED' || request.status === 'CANCELLED' || request.status === 'EXPIRED')
+  );
+  const isOverdue = Boolean(request && new Date(request.requiredBy) < new Date());
+  const canDispatchOutreach = !isRequestClosed && !isOverdue;
+
   const handleCreateBatch = async () => {
     if (selectedCandidateIds.length === 0) return;
+    setBatchSuccessMsg(null);
+    setBatchErrorMsg(null);
+
+    if (isRequestClosed) {
+      setBatchErrorMsg(`Cannot dispatch outreach: This blood request is already marked as ${request.status.toLowerCase()}.`);
+      return;
+    }
+
+    if (isOverdue) {
+      setBatchErrorMsg('Cannot dispatch outreach: The deadline for this blood request has passed.');
+      return;
+    }
+
     try {
-      setBatchSuccessMsg(null);
       const res = await createBatchMutation.mutateAsync(selectedCandidateIds);
       setBatchSuccessMsg(`Outreach sent! Created ${res.created} new opportunity alerts (${res.skipped} already notified).`);
       setSelectedCandidateIds([]);
       setActiveTab('OUTREACH');
       setTimeout(() => setBatchSuccessMsg(null), 5000);
     } catch (err: any) {
-      console.error(err);
+      setBatchErrorMsg(getApiErrorMessage(err));
     }
   };
 
@@ -605,6 +625,25 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
       {/* TAB 2: CANDIDATE MATCHING & BATCH OUTREACH */}
       {activeTab === 'MATCHES' && (
         <div className="space-y-4">
+          {!canDispatchOutreach && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 animate-fade-in">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Outreach Restricted: </span>
+                {isRequestClosed
+                  ? `This blood request is marked as ${request.status.toLowerCase()} (${request.unitsFulfilled}/${request.unitsRequired} units fulfilled). Further candidate alerts cannot be dispatched for closed requests.`
+                  : 'The deadline for this blood request has passed.'}
+              </div>
+            </div>
+          )}
+
+          {batchErrorMsg && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 animate-fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span className="font-semibold">{batchErrorMsg}</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 text-white p-4 rounded-xl shadow-xs">
             <div>
               <h3 className="text-sm font-bold">Batch Donor Outreach</h3>
@@ -617,6 +656,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!canDispatchOutreach}
                 onClick={() => handleSelectTop(1)}
                 className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
               >
@@ -625,6 +665,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!canDispatchOutreach}
                 onClick={() => handleSelectTop(5)}
                 className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
               >
@@ -633,6 +674,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!canDispatchOutreach}
                 onClick={() => handleSelectTop(10)}
                 className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 text-xs"
               >
@@ -642,7 +684,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                disabled={selectedCandidateIds.length === 0}
+                disabled={!canDispatchOutreach || selectedCandidateIds.length === 0}
                 onClick={handleCreateBatch}
                 isLoading={createBatchMutation.isPending}
                 leftIcon={<Send className="w-3.5 h-3.5" />}
@@ -681,8 +723,9 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={isSelected}
+                          disabled={!canDispatchOutreach}
                           onChange={() => handleToggleCandidate(cand.donorId)}
-                          className="mt-1.5 h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500 cursor-pointer"
+                          className="mt-1.5 h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2.5">
