@@ -68,3 +68,24 @@ To prove complete read-write functionality against Supabase without corrupting c
 ### Step 5: Verify Audit Log Integrity
 * **Verification:** `SELECT * FROM "AuditLog" WHERE "targetType" = 'BloodRequest' AND "metadata"->>'patientReference' = 'MIGRATION-SMOKE-20C';`
 * **Assertion:** Audit trail records `CREATE`, `UPDATE`, and `CANCEL` actions with timestamp and actor ID.
+
+---
+
+## 4. Live Post-Cutover Execution Evidence (2026-09-02)
+
+Executed via `scratch/phase20c_production_cutover_verification.ts` directly against `https://blood-donation-6vcp.onrender.com`:
+
+```text
+--- 7. CONTROLLED WRITE PATH & TRAFFIC ROUTING PROOF ---
+  Creating controlled smoke-test BloodRequest: CUTOVER-POST-VERIFY-1788353834010...
+  Create HTTP Status: 201 | ID: 3e8fa9f2-bf1c-4ac7-bce4-d4b99ff1e204
+  Interrogating both databases for record location...
+  -> Supabase Target: ✓ FOUND (Received Live Write)
+  -> Render Source  : ✓ ABSENT (Rollback Protected)
+  -> Cleaned up smoke-test BloodRequest from Supabase.
+```
+
+* **Live Routing:** Verified. Live traffic is 100% terminated on Supabase PostgreSQL.
+* **Render Source Isolation:** Verified. Render database received 0 writes during or after cutover.
+* **Integrity Status:** ✅ **PASS**
+

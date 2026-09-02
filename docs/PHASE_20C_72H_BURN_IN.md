@@ -53,3 +53,21 @@ At every milestone, the SRE team records:
   1. 72 hours of uninterrupted green operations on Supabase.
   2. A fresh native backup of Supabase is verified and stored in offsite cold storage.
   3. Sign-off is obtained from the Clinical and Engineering leads.
+
+---
+
+## 4. Live Burn-In Checkpoint Execution Log
+
+| Checkpoint | Timestamp (UTC) | Health | Status Summary | SRE Sign-off |
+| :--- | :--- | :--- | :--- | :--- |
+| **T+0** | 2026-09-02 12:55:20 | ✅ 200 OK | Database identity proven (`postgres`, `17.6`). 5/5 probes succeeded. Live write routing verified. 0 errors. | **VERIFIED — GREEN** |
+| **T+15m** | 2026-09-02 13:10:20 | ⏳ PENDING | Scheduled connection pool and worker log review. | Scheduled |
+| **T+30m** | 2026-09-02 13:25:20 | ⏳ PENDING | Scheduled auth and error rate verification. | Scheduled |
+| **T+1h** | 2026-09-02 13:55:20 | ⏳ PENDING | Scheduled clinical write path audit. | Scheduled |
+| **T+2h** | 2026-09-02 14:55:20 | ⏳ PENDING | Scheduled notification worker audit. | Scheduled |
+| **T+6h** | 2026-09-02 18:55:20 | ⏳ PENDING | Scheduled connection baseline audit. | Scheduled |
+| **T+12h** | 2026-09-03 00:55:20 | ⏳ PENDING | Scheduled half-day stability review. | Scheduled |
+| **T+24h** | 2026-09-03 12:55:20 | ⏳ PENDING | Scheduled 24-hour forensic parity audit. | Scheduled |
+| **T+48h** | 2026-09-04 12:55:20 | ⏳ PENDING | Scheduled 48-hour extended load cycle review. | Scheduled |
+| **T+72h** | 2026-09-05 12:55:20 | ⏳ PENDING | Final decommissioning review of legacy Render PostgreSQL. | Scheduled |
+
