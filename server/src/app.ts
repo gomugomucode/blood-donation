@@ -150,12 +150,16 @@ export const createApp = (): Express => {
 
   app.get('/health/ready', async (req: Request, res: Response): Promise<void> => {
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      const [diag] = await prisma.$queryRawUnsafe<Array<{ current_database: string; version: string }>>(
+        "SELECT current_database(), split_part(version(), ' ', 2) as version;"
+      );
       res.status(200).json({
         status: 'ready',
         timestamp: new Date().toISOString(),
         service: 'HemaCare Blood Donation API',
         database: 'connected',
+        databaseName: diag?.current_database,
+        engineVersion: diag?.version,
         version: '1.0.0',
         requestId: req.id,
       });
@@ -173,12 +177,16 @@ export const createApp = (): Express => {
 
   const healthCheckHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      const [diag] = await prisma.$queryRawUnsafe<Array<{ current_database: string; version: string }>>(
+        "SELECT current_database(), split_part(version(), ' ', 2) as version;"
+      );
       res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
         service: 'Blood Donation Management API',
         database: 'connected',
+        databaseName: diag?.current_database,
+        engineVersion: diag?.version,
         version: '1.0.0',
         requestId: req.id,
       });
