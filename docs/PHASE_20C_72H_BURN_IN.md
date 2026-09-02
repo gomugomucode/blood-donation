@@ -105,4 +105,19 @@ At every milestone, the SRE team records:
 * **Incidents:** Incident 20C.2 resolved (local test suite runner environment isolation added; baseline re-synced to exact 167 rows; Render rollback source verified 167 rows untouched)
 * **Assessment:** **GREEN**
 
+### Checkpoint T+30m (30 Minutes Post-Cutover)
+* **Timestamp:** 2026-09-02T13:25:20Z (Observed: 2026-09-02T13:23:33.757Z)
+* **Application health:** `healthy` / `alive` / `ready` (HTTP 200)
+* **Database health:** Connected (`databaseName = postgres`, `engineVersion = 17.6`)
+* **Connection pool:** Stable, zero pool exhaustion, zero connection dropouts
+* **5xx:** 0
+* **Database errors:** 0
+* **Latency:** ~275ms indexed queries, ~460ms aggregation queries
+* **Worker:** Active (`SANDBOX / SIMULATED`)
+* **Clinical invariants:** Verified; 22 requests, 19 donors, 6 donations intact (0 allocation bounds violations)
+* **Security:** Rate limiting active (`trust proxy = 1`); body parser malformed JSON handled as 400 Bad Request
+* **Notification pipeline:** Idempotent, carrier in sandbox mode
+* **Incidents:** 0 new incidents (Post-incident test isolation hardened; fail-closed allowlist verified)
+* **Assessment:** **GREEN**
+
 
