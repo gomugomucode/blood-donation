@@ -18,15 +18,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   }
 
   if (!isAuthenticated || !user) {
-    // If attempting to access admin route without login, send to /admin/login
-    if (location.pathname.startsWith('/admin')) {
-      return <Navigate to="/admin/login" state={{ from: location }} replace />;
-    }
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Unauthenticated access to any protected route redirects to canonical /login with safe return path
+    const returnTo = location.pathname + location.search;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Strict RBAC: Donor accessing admin route gets redirected to /dashboard
+    // Strict RBAC boundary: Donors attempting to access administrative surfaces get redirected to donor dashboard
     if (user.role === 'DONOR') {
       return <Navigate to="/dashboard" replace />;
     }

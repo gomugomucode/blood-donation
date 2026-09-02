@@ -12,7 +12,6 @@ import { lazyWithRetry } from '../lib/lazyRetry.js';
 const HomePage = lazyWithRetry(() => import('../pages/HomePage.js'), 'HomePage');
 const LoginPage = lazyWithRetry(() => import('../pages/LoginPage.js'), 'LoginPage');
 const RegisterPage = lazyWithRetry(() => import('../pages/RegisterPage.js'), 'RegisterPage');
-const AdminLoginPage = lazyWithRetry(() => import('../pages/AdminLoginPage.js'), 'AdminLoginPage');
 const ForgotPasswordPage = lazyWithRetry(() => import('../pages/auth/ForgotPasswordPage.js'), 'ForgotPasswordPage');
 const ResetPasswordPage = lazyWithRetry(() => import('../pages/auth/ResetPasswordPage.js'), 'ResetPasswordPage');
 
@@ -53,8 +52,8 @@ export const AppRoutes: React.FC = () => {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Route>
 
-          {/* Admin Login (Isolated) */}
-          <Route path="/admin/login" element={<AdminLoginPage />} />
+          {/* Unified Login: Redirect legacy /admin/login to canonical /login */}
+          <Route path="/admin/login" element={<Navigate to="/login" replace />} />
 
           {/* Donor Protected Routes */}
           <Route

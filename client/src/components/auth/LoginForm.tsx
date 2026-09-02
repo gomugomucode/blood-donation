@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, LogIn, ShieldAlert } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Mail, Lock, AlertCircle, LogIn } from 'lucide-react';
 import { loginSchema, LoginFormValues } from '../../schemas/auth.schema.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Button } from '../common/Button.js';
 import { Input } from '../common/Input.js';
 import { getApiErrorMessage } from '../../lib/api.js';
 
-interface LoginFormProps {
-  isAdmin?: boolean;
-}
-
-export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
+export const LoginForm: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -30,19 +27,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
     },
   });
 
+  const sanitizeReturnPath = (rawPath: string | null | undefined, role: 'ADMIN' | 'DONOR'): string => {
+    if (!rawPath) return role === 'ADMIN' ? '/admin' : '/dashboard';
+    const trimmed = rawPath.trim();
+    // Security: Only allow safe, internal paths starting with a single '/'
+    if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.includes(':') || trimmed.includes('\\')) {
+      return role === 'ADMIN' ? '/admin' : '/dashboard';
+    }
+    // Role boundary: A donor cannot be redirected to any /admin paths
+    if (role === 'DONOR' && trimmed.startsWith('/admin')) {
+      return '/dashboard';
+    }
+    return trimmed;
+  };
+
   const onSubmit = async (data: LoginFormValues) => {
     setServerError(null);
     try {
       const user = await login(data);
-      if (isAdmin && user.role !== 'ADMIN') {
-        setServerError('Access denied: This portal is strictly restricted to administrator accounts.');
-        return;
-      }
-      if (user.role === 'ADMIN') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      const searchParams = new URLSearchParams(location.search);
+      const rawReturnTo = searchParams.get('returnTo') || (location.state as any)?.from?.pathname;
+      const targetDestination = sanitizeReturnPath(rawReturnTo, user.role);
+
+      navigate(targetDestination, { replace: true });
     } catch (error) {
       setServerError(getApiErrorMessage(error));
     }
@@ -63,7 +70,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
       <Input
         label="Email Address"
         type="email"
-        placeholder="e.g. sarah.jenkins@example.org"
+        placeholder="e.g. yourname@example.org"
         autoComplete="email"
         required
         leftIcon={<Mail className="w-4 h-4 text-[#9CA3AF]" />}
@@ -96,28 +103,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin = false }) => {
         type="submit"
         variant="primary"
         size="lg"
-        className="w-full mt-2"
+        className="w-full mt-2 min-h-[44px]"
         isLoading={isSubmitting}
-        leftIcon={isAdmin ? <ShieldAlert className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+        leftIcon={<LogIn className="w-4 h-4" />}
       >
-        {isAdmin ? 'Sign in to Coordinator Center' : 'Sign In as Donor'}
+        Sign In
       </Button>
 
-      {!isAdmin ? (
-        <p className="text-center text-xs text-[#667085] pt-3">
-          Don't have a donor account yet?{' '}
-          <Link to="/register" className="font-bold text-[#D92D45] hover:text-[#B42318] underline">
-            Register as a Donor
-          </Link>
-        </p>
-      ) : (
-        <p className="text-center text-xs text-[#667085] pt-3">
-          Need donor portal access?{' '}
-          <Link to="/login" className="font-bold text-[#1F2937] hover:text-[#D92D45] hover:underline">
-            Go to Donor Portal
-          </Link>
-        </p>
-      )}
+      <p className="text-center text-xs text-[#667085] pt-3">
+        Don't have an account yet?{' '}
+        <Link to="/register" className="font-bold text-[#D92D45] hover:text-[#B42318] underline">
+          Register as a Voluntary Donor
+        </Link>
+      </p>
     </form>
   );
 };
