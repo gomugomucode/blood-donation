@@ -43,3 +43,9 @@ coverage
 # Prisma
 server/prisma/*.db
 server/prisma/*.db-journal
+
+# Database Backups & Dumps (Never commit production data)
+backups/
+*.dump
+scratch/*.dump
+scratch/*.sql
