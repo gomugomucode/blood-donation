@@ -26,6 +26,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await authService.getMe();
       setUser(userData);
     } catch {
+      try {
+        localStorage.removeItem('auth_token');
+      } catch {
+        // Ignore
+      }
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -39,12 +44,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (data: LoginFormValues): Promise<User> => {
     setIsLoading(true);
     try {
-      await authService.login(data);
+      const authResult = await authService.login(data);
+      if (authResult.token) {
+        try {
+          localStorage.setItem('auth_token', authResult.token);
+        } catch {
+          // Ignore
+        }
+      }
+
       // Fetch fresh full user profile with eligibility
-      const fullUser = await authService.getMe();
+      let fullUser = authResult.user;
+      try {
+        fullUser = await authService.getMe();
+      } catch {
+        // Use user object from login payload if getMe has transient delay
+      }
+
       setUser(fullUser);
       return fullUser;
     } catch (error) {
+      try {
+        localStorage.removeItem('auth_token');
+      } catch {
+        // Ignore
+      }
       setUser(null);
       throw error;
     } finally {
@@ -55,11 +79,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: RegisterFormValues): Promise<User> => {
     setIsLoading(true);
     try {
-      await authService.register(data);
-      const fullUser = await authService.getMe();
+      const authResult = await authService.register(data);
+      if (authResult.token) {
+        try {
+          localStorage.setItem('auth_token', authResult.token);
+        } catch {
+          // Ignore
+        }
+      }
+
+      let fullUser = authResult.user;
+      try {
+        fullUser = await authService.getMe();
+      } catch {
+        // Use user object from register payload
+      }
+
       setUser(fullUser);
       return fullUser;
     } catch (error) {
+      try {
+        localStorage.removeItem('auth_token');
+      } catch {
+        // Ignore
+      }
       setUser(null);
       throw error;
     } finally {
@@ -73,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      try {
+        localStorage.removeItem('auth_token');
+      } catch {
+        // Ignore
+      }
       setUser(null);
     }
   };

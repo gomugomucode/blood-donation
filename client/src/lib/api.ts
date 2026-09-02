@@ -21,6 +21,34 @@ export const api = axios.create({
   },
 });
 
+// Cross-domain fallback: Automatically attach Bearer token from localStorage
+api.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Ignore localStorage access errors in private browsing modes
+  }
+  return config;
+});
+
+// Clear stale token on 401 Unauthorized
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      try {
+        localStorage.removeItem('auth_token');
+      } catch {
+        // Ignore
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 
 export const getApiErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
