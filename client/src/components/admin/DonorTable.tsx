@@ -23,16 +23,16 @@ export const DonorTable: React.FC<DonorTableProps> = ({
   return (
     <div className="bg-white rounded-2xl border border-[#E7E5E4] shadow-card overflow-hidden text-left">
       {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="w-full text-left text-xs text-[#667085]">
+      <div className="hidden lg:block overflow-x-auto w-full">
+        <table className="w-full text-left text-xs text-[#667085] min-w-[880px]">
           <thead className="bg-[#FAF9F7] text-[#1F2937] font-bold border-b border-[#E7E5E4] uppercase tracking-wider text-[11px]">
             <tr>
-              <th className="py-3.5 px-4">Donor Name & Info</th>
-              <th className="py-3.5 px-4">Blood Group</th>
-              <th className="py-3.5 px-4">Contact Phone</th>
-              <th className="py-3.5 px-4">Last Donation</th>
-              <th className="py-3.5 px-4">Eligibility</th>
-              <th className="py-3.5 px-4 text-right">Actions</th>
+              <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Donor Name & Info</th>
+              <th className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">Blood Group</th>
+              <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Contact Phone</th>
+              <th className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">Last Donation</th>
+              <th className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">Eligibility</th>
+              <th className="py-3.5 px-4 text-right pr-6 whitespace-nowrap min-w-[140px]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E7E5E4]/60">
@@ -82,7 +82,7 @@ export const DonorTable: React.FC<DonorTableProps> = ({
                     )}
                   </td>
 
-                  <td className="py-3.5 px-4 text-right">
+                  <td className="py-3.5 px-4 text-right pr-6 whitespace-nowrap min-w-[140px]">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"

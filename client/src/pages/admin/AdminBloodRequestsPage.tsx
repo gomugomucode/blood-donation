@@ -188,17 +188,17 @@ export const AdminBloodRequestsPage: React.FC = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-[#E7E5E4] shadow-card overflow-hidden">
           {/* Desktop Table */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#667085]">
+          <div className="hidden lg:block overflow-x-auto w-full">
+            <table className="w-full text-left text-xs text-[#667085] min-w-[1040px]">
               <thead className="bg-[#FAF9F7] border-b border-[#E7E5E4] uppercase tracking-wider font-bold text-[#1F2937] text-[11px]">
                 <tr>
-                  <th className="py-4 px-6">Blood Group</th>
-                  <th className="py-4 px-6">Fulfillment Progress</th>
-                  <th className="py-4 px-6">Urgency</th>
-                  <th className="py-4 px-6">Hospital & Location</th>
-                  <th className="py-4 px-6">Needed By</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-right">Coordination</th>
+                  <th className="py-4 px-4 whitespace-nowrap min-w-[150px]">Blood Group</th>
+                  <th className="py-4 px-4 whitespace-nowrap min-w-[160px]">Fulfillment Progress</th>
+                  <th className="py-4 px-4 whitespace-nowrap min-w-[130px]">Urgency</th>
+                  <th className="py-4 px-4 min-w-[220px]">Hospital & Location</th>
+                  <th className="py-4 px-4 whitespace-nowrap min-w-[130px]">Needed By</th>
+                  <th className="py-4 px-4 whitespace-nowrap min-w-[130px]">Status</th>
+                  <th className="py-4 px-4 text-right pr-6 whitespace-nowrap min-w-[180px]">Coordination</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E7E5E4]/60">
@@ -214,18 +214,18 @@ export const AdminBloodRequestsPage: React.FC = () => {
                       key={req.id}
                       className="hover:bg-[#FAF9F7] transition-colors group"
                     >
-                      <td className="py-4 px-6 font-bold text-[#1F2937]">
+                      <td className="py-4 px-4 font-bold text-[#1F2937] whitespace-nowrap min-w-[150px]">
                         <div className="flex items-center gap-2">
                           <BloodGroupBadge bloodGroup={req.bloodGroup} />
                           {req.patientReference && (
-                            <span className="text-2xs text-[#667085] font-mono">
+                            <span className="text-2xs text-[#667085] font-mono bg-[#FAF9F7] px-2 py-0.5 rounded-md border border-[#E7E5E4] whitespace-nowrap font-semibold">
                               #{req.patientReference}
                             </span>
                           )}
                         </div>
                       </td>
 
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-4 min-w-[160px]">
                         <div className="space-y-1.5 min-w-[140px]">
                           <div className="flex items-center justify-between text-xs font-mono">
                             <span className="font-bold text-[#1F2937]">
@@ -248,24 +248,24 @@ export const AdminBloodRequestsPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-4 whitespace-nowrap min-w-[130px]">
                         <RequestUrgencyBadge urgency={req.urgency} />
                       </td>
 
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-4 min-w-[220px]">
                         <div className="space-y-0.5">
                           <div className="font-bold text-[#1F2937] flex items-center gap-1.5">
                             <Building2 className="w-3.5 h-3.5 text-[#D92D45] shrink-0" />
                             <span className="truncate max-w-[200px]">{req.hospitalName}</span>
                           </div>
                           <div className="text-2xs text-[#667085] flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-[#9CA3AF]" />
+                            <MapPin className="w-3.5 h-3.5 text-[#9CA3AF] shrink-0" />
                             <span className="truncate max-w-[200px]">{req.location}</span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-4 px-6 whitespace-nowrap font-mono">
+                      <td className="py-4 px-4 whitespace-nowrap font-mono min-w-[130px]">
                         <div className="flex items-center gap-1.5 text-xs">
                           <Calendar className="w-3.5 h-3.5 text-[#9CA3AF]" />
                           <span className={isOverdue ? 'text-[#B42318] font-bold' : 'text-[#1F2937] font-semibold'}>
@@ -274,11 +274,11 @@ export const AdminBloodRequestsPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-4 px-6 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap min-w-[130px]">
                         <RequestStatusBadge status={req.status} />
                       </td>
 
-                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                      <td className="py-4 px-4 text-right whitespace-nowrap pr-6 min-w-[180px]">
                         <Link to={`/admin/requests/${req.id}`}>
                           <Button variant="outline" size="sm" rightIcon={<Sparkles className="w-3.5 h-3.5 text-[#B45309]" />}>
                             Match & Outreach

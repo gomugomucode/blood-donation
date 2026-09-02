@@ -283,17 +283,17 @@ export const AdminOperationsPage: React.FC = () => {
         ) : !notifData?.items || notifData.items.length === 0 ? (
           <div className="p-12 text-center text-slate-400 text-xs">No notification records matched current filters.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-600">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs text-slate-600 min-w-[960px]">
               <thead className="bg-slate-50/80 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">Recipient</th>
-                  <th className="py-3.5 px-4">Channel</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Attempts</th>
-                  <th className="py-3.5 px-4">Error Diagnostics</th>
-                  <th className="py-3.5 px-4">Timestamp</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Recipient</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[100px]">Channel</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">Status</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[90px]">Attempts</th>
+                  <th className="py-3.5 px-4 min-w-[200px]">Error Diagnostics</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Timestamp</th>
+                  <th className="py-3.5 px-4 text-right pr-6 whitespace-nowrap min-w-[100px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">

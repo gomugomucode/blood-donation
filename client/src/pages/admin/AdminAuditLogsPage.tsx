@@ -141,16 +141,16 @@ export const AdminAuditLogsPage: React.FC = () => {
             <p className="font-semibold">No audit events match current criteria</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#667085]">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs text-[#667085] min-w-[960px]">
               <thead className="bg-[#FAF9F7] text-[#1F2937] font-bold border-b border-[#E7E5E4] uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">Timestamp</th>
-                  <th className="py-3.5 px-4">Action</th>
-                  <th className="py-3.5 px-4">Actor</th>
-                  <th className="py-3.5 px-4">Target Resource</th>
-                  <th className="py-3.5 px-4">Details Snapshot</th>
-                  <th className="py-3.5 px-4 text-right">Inspect</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Timestamp</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[180px]">Action</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Actor</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[160px]">Target Resource</th>
+                  <th className="py-3.5 px-4 min-w-[200px]">Details Snapshot</th>
+                  <th className="py-3.5 px-4 text-right pr-6 whitespace-nowrap min-w-[100px]">Inspect</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E7E5E4]/60">
@@ -196,7 +196,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                     <td className="py-3.5 px-4 text-[#667085] font-sans text-2xs max-w-xs truncate">
                       {log.metadata ? JSON.stringify(log.metadata) : '—'}
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-right pr-6 whitespace-nowrap min-w-[100px]">
                       <button
                         onClick={() => setSelectedLog(log)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[#1F2937] bg-[#FAF9F7] hover:bg-[#F5F5F4] border border-[#E7E5E4] transition font-sans text-xs font-semibold cursor-pointer"
