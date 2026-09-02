@@ -88,11 +88,31 @@ An in-depth inspection of the HemaCare codebase and deployment configuration rev
 
 ---
 
-## 3. PostgreSQL Compatibility & Feature Assessment
+## 3. Target Database Fingerprint & Pre-Flight Validation (Supabase PostgreSQL)
 
-| Feature / Data Type | Render Source (PostgreSQL 18.6) | Supabase Target (PostgreSQL 15.x / 16.x / 17.x) | Compatibility Assessment |
+A non-destructive pre-flight audit executed via [scratch/target_supabase_audit.ts](file:///c:/Users/Anupam%20Baral/Desktop/blood-donation/scratch/target_supabase_audit.ts) confirmed:
+
+- **PostgreSQL Engine:** `PostgreSQL 17.6 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit`
+- **Database Name:** `postgres`
+- **Current Database User:** `postgres`
+- **Max Connections:** `60`
+- **Extensions Available:** `plpgsql` (1.0), `pgcrypto` (1.3), `uuid-ossp` (1.1), `pg_stat_statements` (1.11), `supabase_vault` (0.3.1)
+- **Existing Public Schema Tables:** `0` (Completely empty)
+- **Existing Custom Enums in Public:** `0`
+- **Existing Constraints in Public:** `0`
+- **Existing Indexes in Public:** `0`
+- **Total Existing Rows in Public:** `0`
+- **Target Safety Gate Status:** **PASS — CLEAN & EMPTY TARGET (Zero collision risk)**
+- **Port 5432 (Session Mode) Connectivity:** **VERIFIED**
+- **Port 6543 (Transaction Pooler Mode with `?pgbouncer=true`) Connectivity:** **VERIFIED**
+
+---
+
+## 4. PostgreSQL Compatibility & Feature Assessment
+
+| Feature / Data Type | Render Source (PostgreSQL 18.6) | Supabase Target (PostgreSQL 17.6) | Compatibility Assessment |
 | :--- | :--- | :--- | :--- |
-| **Prisma 6.19.3 Support** | Full support | Full support | **PASS** — Prisma supports PostgreSQL 12 through 18. |
+| **Prisma 6.19.3 Support** | Full support | Full support | **PASS** — Prisma officially supports PostgreSQL 12 through 18. |
 | **UUID Primary Keys** | Text / `gen_random_uuid()` | Native UUID / `gen_random_uuid()` | **PASS** — Text UUIDs are 100% portable and require no extension dependencies. |
 | **Custom Enums** | Native PostgreSQL `pg_type` | Native PostgreSQL `pg_type` | **PASS** — Identical behavior across all PostgreSQL versions. |
 | **Timestamps** | `timestamp(3) without time zone` | `timestamp(3) without time zone` | **PASS** — Sub-millisecond precision is preserved identically. |
@@ -103,7 +123,7 @@ An in-depth inspection of the HemaCare codebase and deployment configuration rev
 
 ---
 
-## 4. Connection Strategy Analysis (Supabase Architecture)
+## 5. Connection Strategy Analysis (Supabase Architecture)
 
 Supabase utilizes **Supavisor** (modern connection pooler replacing PgBouncer) alongside direct PostgreSQL connections. Choosing the correct connection mode for each workload is critical:
 
@@ -122,7 +142,7 @@ Supabase utilizes **Supavisor** (modern connection pooler replacing PgBouncer) a
                                     └────────────────────────────────────────────────────────┘
 ```
 
-### 4.1 Connection Role A: Schema / Data Migration & Administration (`SUPABASE_DIRECT_URL`)
+### 5.1 Connection Role A: Schema / Data Migration & Administration (`SUPABASE_DIRECT_URL`)
 * **Endpoint:** Port `5432` (Session Pooler Mode or Direct DB host `aws-0-[region].pooler.supabase.com:5432` / `db.[ref].supabase.co:5432`).
 * **Protocol:** Full standard PostgreSQL protocol.
 * **Why required:**
@@ -133,7 +153,7 @@ Supabase utilizes **Supavisor** (modern connection pooler replacing PgBouncer) a
   postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
   ```
 
-### 4.2 Connection Role B: Production Prisma Application Runtime (`SUPABASE_DATABASE_URL`)
+### 5.2 Connection Role B: Production Prisma Application Runtime (`SUPABASE_DATABASE_URL`)
 * **Endpoint:** Port `6543` (Transaction Pooler Mode).
 * **Protocol:** Transaction-level connection pooling.
 * **Prisma Parameter Required:** `?pgbouncer=true&connection_limit=10`
@@ -147,7 +167,7 @@ Supabase utilizes **Supavisor** (modern connection pooler replacing PgBouncer) a
 
 ---
 
-## 5. Detected Technical Risks & Mitigation Controls
+## 6. Detected Technical Risks & Mitigation Controls
 
 | Identified Risk | Impact | Automated Mitigation Control |
 | :--- | :--- | :--- |
@@ -160,7 +180,7 @@ Supabase utilizes **Supavisor** (modern connection pooler replacing PgBouncer) a
 
 ---
 
-## 6. Exact Migration Commands Planned for Phase 20B (Controlled Restore)
+## 7. Exact Migration Commands Planned for Phase 20B (Controlled Restore)
 
 These commands will be executed in **Phase 20B** only after target database credentials are provided and target emptiness is verified:
 
@@ -185,7 +205,7 @@ DATABASE_URL="$SUPABASE_DIRECT_URL" npm run test --workspace=server
 
 ---
 
-## 7. Rollback Protocol
+## 8. Rollback Protocol
 
 If any parity discrepancy or regression occurs during Phase 20B or production cutover:
 1. Render backend (`hemacare-api`) environment variable `DATABASE_URL` remains set to Render PostgreSQL.
