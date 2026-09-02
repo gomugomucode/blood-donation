@@ -1,23 +1,25 @@
 import { beforeAll, afterAll } from 'vitest';
+import { assertTestDatabaseSafe } from '../src/config/test-database-safety.js';
 import { prisma } from '../src/config/db.js';
 
 beforeAll(async () => {
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (
-    (dbUrl.includes('supabase.co') || dbUrl.includes('supabase.com') || dbUrl.includes('render.com')) &&
-    process.env.ALLOW_PRODUCTION_TESTING !== 'true'
-  ) {
-    throw new Error(
-      `CRITICAL SAFETY INTERCEPT: Vitest is pointed at a production/remote database host (${dbUrl.split('@')[1] || 'remote'}). ` +
-      `Automated tests run destructive cleanup hooks (deleteMany). ` +
-      `To protect production data, tests are blocked. ` +
-      `Please configure a dedicated local/test database in DATABASE_URL or set ALLOW_PRODUCTION_TESTING=true.`
-    );
+  // 1. Mandatory fail-closed safety gate. If unsafe, THROWS FATALLY.
+  assertTestDatabaseSafe();
+
+  // 2. Attempt connection to approved local test database
+  try {
+    await prisma.$connect();
+  } catch (err: any) {
+    // Allows pure unit tests to execute even if local test PostgreSQL is offline
+    console.warn(`[Test Setup Notice]: Local test database not reachable (${err.message}). Unit tests will continue; database-dependent integration tests will fail individually.`);
   }
-  await prisma.$connect();
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  try {
+    await prisma.$disconnect();
+  } catch {
+    // Ignore disconnect errors if never connected
+  }
 });
 

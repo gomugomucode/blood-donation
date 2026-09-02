@@ -52,16 +52,26 @@ The following critical system telemetry patterns are continuously monitored acro
 * **Remediation:** Commit `2740b18` bypassed runtime startup migrations via `RUN_MIGRATIONS_ON_STARTUP` guard. All 6 migrations were already applied and verified on Supabase. Container now boots and binds to `PORT` in under 500ms.
 * **Status:** **RESOLVED & VERIFIED.** Zero recurrence post-cutover.
 
-### Incident 20C.2: Local Integration Test Suite Database Isolation Failure
+### INCIDENT: 20C.2
+* **TYPE:** Production database contamination by local test execution
+* **IMPACT:** Supabase production data temporarily deleted
+* **SOURCE RENDER DATABASE:** NOT AFFECTED (167 rows preserved)
+* **RECOVERY:** Completed from verified Render source
+* **CURRENT STATUS:** RESOLVED
+* **SUMMARY METRICS:**
+  - 1 test-isolation incident occurred.
+  - 0 permanent data-loss events occurred.
+  - 0 rollback events occurred.
 * **Timestamp:** 2026-09-02T13:04:00Z (Post-cutover verification task)
 * **Severity:** P0 (Target Data Loss & Auth Failure on Supabase)
 * **Symptoms:** Adversarial failure detection probe identified Admin Login failing with `401 Unauthorized`. Querying Supabase revealed `User` table had been cleared down to 1 user.
 * **Root Cause:** In Phase 20C.2 Step 27, automated test suite (`npm run test`) was executed locally on the developer machine. Because `server/.env` pointed to the Supabase pooler, integration test fixtures with unconditional `prisma.user.deleteMany()` cleared target tables.
-* **Rollback Source Integrity:** Render PostgreSQL was completely untouched and retained the exact 167 baseline rows.
-* **Remediation:**
-  1. **Environment Isolation Guard:** Added strict safety intercept in `server/tests/setup.ts` to immediately block Vitest from running against any remote/production database URL (`supabase.co`, `render.com`).
-  2. **Baseline Re-synchronization:** Executed `scratch/resync_baseline_to_supabase.ts` to read the immutable 167-row baseline from Render PostgreSQL and restore all 21 Users, 19 DonorProfiles, 22 BloodRequests, 6 Donations, 2 DonorOpportunities, 2 Notifications, and 89 AuditLogs to Supabase.
-  3. **Verification:** Live Admin Login (`admin@blooddonation.org`) verified returning `HTTP 200 OK` and JWT token. Live Donor Login verified returning `HTTP 200 OK`. RBAC verified blocking donor from admin routes (`403 Forbidden`).
+* **Remediation & Hardening:**
+  1. **Fail-Closed Safety Validator:** Built `server/src/config/test-database-safety.ts` enforcing an explicit localhost / disposable Docker allowlist, denying remote hosts by default.
+  2. **Pre-Setup Kill Switch:** Added `server/tests/pre-setup-safety.ts` at the head of Vitest `setupFiles`, aborting before any test or fixture executes.
+  3. **Prisma Client Guard:** Added assertion in `server/src/config/db.ts` to prevent PrismaClient instantiation against remote databases in `test` mode.
+  4. **Baseline Re-synchronization:** Executed `scratch/resync_baseline_to_supabase.ts` to restore all 167 rows from the untouched Render PostgreSQL rollback authority.
+  5. **Negative Test Suite:** Added 21 automated safety tests in `server/tests/test-database-safety.test.ts` proving remote hosts (Supabase, Render, AWS, Neon, public IPs) are completely blocked.
 * **Status:** **RESOLVED & VERIFIED.** Baseline restored to exact 167 rows; test runner permanently guarded.
 
 ### Incident 20C.3: Reverse-Proxy Rate-Limiter Header Warning & Body Parser SyntaxError
