@@ -88,4 +88,12 @@ The following critical system telemetry patterns are continuously monitored acro
   2. Added `SyntaxError` check in `server/src/middleware/error.middleware.ts` to intercept malformed request bodies and return `HTTP 400 Bad Request`.
 * **Status:** **RESOLVED & COMMITTED.**
 
+### Operational Security Audit: Historical Credential Exposure
+* **Credential exposure:** Detected during migration work and command-line execution logs
+* **Risk:** Credentials considered compromised
+* **Action:** Dashboard credential rotation protocol established; fail-closed test environment isolation verified
+* **Verification:** Production connectivity and 176/176 tests verified; old exposed credentials slated for revocation in provider dashboards
+* **JWT exposure:** Procedure provided to rotate JWT_SECRET and invalidate legacy tokens
+* **Status:** RESOLUTION IN PROGRESS (Awaiting dashboard rotation execution)
+
 
