@@ -64,3 +64,18 @@ The following critical system telemetry patterns are continuously monitored acro
   3. **Verification:** Live Admin Login (`admin@blooddonation.org`) verified returning `HTTP 200 OK` and JWT token. Live Donor Login verified returning `HTTP 200 OK`. RBAC verified blocking donor from admin routes (`403 Forbidden`).
 * **Status:** **RESOLVED & VERIFIED.** Baseline restored to exact 167 rows; test runner permanently guarded.
 
+### Incident 20C.3: Reverse-Proxy Rate-Limiter Header Warning & Body Parser SyntaxError
+* **Timestamp:** 2026-09-02T13:09:08Z (Live runtime log inspection)
+* **Severity:** P2 (Observability & Client Validation Hardening)
+* **Symptoms:**
+  1. `ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false` emitted by `express-rate-limit`.
+  2. Malformed JSON curl request triggered an unhandled 500 server error instead of a 400 Bad Request.
+* **Root Cause:**
+  1. Express defaults to `trust proxy = false`, causing `express-rate-limit` to warn that Render's proxy IP might be shared across all clients.
+  2. `error.middleware.ts` lacked a specific check for `body-parser` JSON syntax errors.
+* **Remediation:** (Commit `ca51a40`):
+  1. Added `app.set('trust proxy', 1)` in `server/src/app.ts` to allow accurate client IP identification through Render / Cloudflare reverse proxies.
+  2. Added `SyntaxError` check in `server/src/middleware/error.middleware.ts` to intercept malformed request bodies and return `HTTP 400 Bad Request`.
+* **Status:** **RESOLVED & COMMITTED.**
+
+
