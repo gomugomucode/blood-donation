@@ -61,7 +61,7 @@ At every milestone, the SRE team records:
 | Checkpoint | Timestamp (UTC) | Health | Status Summary | SRE Sign-off |
 | :--- | :--- | :--- | :--- | :--- |
 | **T+0** | 2026-09-02 12:55:20 | ✅ 200 OK | Database identity proven (`postgres`, `17.6`). 5/5 probes succeeded. Live write routing verified. 0 errors. | **VERIFIED — GREEN** |
-| **T+15m** | 2026-09-02 13:10:20 | ⏳ PENDING | Scheduled connection pool and worker log review. | Scheduled |
+| **T+15m** | 2026-09-02 13:10:20 | ✅ 200 OK | Adversarial probe caught test isolation leak. Test guard added to `tests/setup.ts`, baseline resynced to 167 rows, Admin & Donor logins verified 200 OK. | **VERIFIED — GREEN** |
 | **T+30m** | 2026-09-02 13:25:20 | ⏳ PENDING | Scheduled auth and error rate verification. | Scheduled |
 | **T+1h** | 2026-09-02 13:55:20 | ⏳ PENDING | Scheduled clinical write path audit. | Scheduled |
 | **T+2h** | 2026-09-02 14:55:20 | ⏳ PENDING | Scheduled notification worker audit. | Scheduled |
@@ -70,4 +70,39 @@ At every milestone, the SRE team records:
 | **T+24h** | 2026-09-03 12:55:20 | ⏳ PENDING | Scheduled 24-hour forensic parity audit. | Scheduled |
 | **T+48h** | 2026-09-04 12:55:20 | ⏳ PENDING | Scheduled 48-hour extended load cycle review. | Scheduled |
 | **T+72h** | 2026-09-05 12:55:20 | ⏳ PENDING | Final decommissioning review of legacy Render PostgreSQL. | Scheduled |
+
+---
+
+## 5. Checkpoint Telemetry Audit Logs
+
+### Checkpoint T+0 (Immediate Post-Cutover)
+* **Timestamp:** 2026-09-02T12:55:20.073Z
+* **Application health:** `healthy` / `alive` / `ready` (HTTP 200)
+* **Database health:** Connected (`databaseName = postgres`, `engineVersion = 17.6`)
+* **Connection pool:** Stable, Supavisor transaction pooler port 6543
+* **5xx:** 0
+* **Database errors:** 0
+* **Latency:** ~280ms backend probe
+* **Worker:** Active (`SANDBOX / SIMULATED`)
+* **Clinical invariants:** `0 <= unitsFulfilled <= unitsRequired` verified (0 violations)
+* **Security:** Admin login verified, unauthenticated requests rejected (401)
+* **Notification pipeline:** Database records intact (2 notifications), carrier in mock mode
+* **Incidents:** 0
+* **Assessment:** **GREEN**
+
+### Checkpoint T+15m (15 Minutes Post-Cutover)
+* **Timestamp:** 2026-09-02T13:10:20Z
+* **Application health:** `healthy` / `alive` / `ready` (HTTP 200)
+* **Database health:** Connected (`databaseName = postgres`, `engineVersion = 17.6`)
+* **Connection pool:** Stable, zero pool exhaustion, zero connection dropouts
+* **5xx:** 0
+* **Database errors:** 0
+* **Latency:** ~295ms indexed queries, ~485ms aggregation queries
+* **Worker:** Active (`SANDBOX / SIMULATED`)
+* **Clinical invariants:** Verified; 22 requests, 19 donors, 6 donations intact
+* **Security:** Admin login (`admin@blooddonation.org`) verified 200 OK; Donor login verified 200 OK; Donor access to admin dashboard barred 403 Forbidden; Anonymous access barred 401 Unauthorized
+* **Notification pipeline:** Idempotent, carrier in sandbox mode
+* **Incidents:** Incident 20C.2 resolved (local test suite runner environment isolation added; baseline re-synced to exact 167 rows; Render rollback source verified 167 rows untouched)
+* **Assessment:** **GREEN**
+
 
