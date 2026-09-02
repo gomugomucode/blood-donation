@@ -507,6 +507,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
                 Find & Outreach Candidates
               </Button>
             </Card>
+          ) : (
             <Card className="overflow-hidden">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left text-sm">
@@ -784,7 +785,8 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
             </Card>
           ) : (
             <Card className="overflow-hidden">
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
                   <tr>
                     <th className="py-3 px-4">Donor Name</th>
@@ -814,6 +816,7 @@ export const AdminBloodRequestDetailPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </Card>
           )}
         </div>

@@ -19,12 +19,18 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
     -webkit-tap-highlight-color: transparent;
     background-color: #FAF9F7;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
   body {
     background-color: #FAF9F7;
     color: #1F2937;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
     @apply antialiased selection:bg-[#FFE4E8] selection:text-[#8F1D35];
   }
 
