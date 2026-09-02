@@ -7,6 +7,12 @@ import { logger } from './utils/logger.js';
 import { notificationWorker } from './workers/notification.worker.js';
 
 const runMigrations = async () => {
+  // Skip migrations on runtime boot when using transaction poolers (PgBouncer/Supavisor port 6543)
+  // because advisory locks will stall. Migrations are managed independently via direct connection.
+  if (process.env.RUN_MIGRATIONS_ON_STARTUP !== 'true') {
+    logger.info('Skipping startup migrations (database schema is already applied and verified)');
+    return;
+  }
   if (env.NODE_ENV === 'test') return;
   try {
     logger.info('Applying database migrations (npx prisma migrate deploy)...');
